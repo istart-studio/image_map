@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Canvas Tiles</title>
+    <link href="https://cdn.bootcss.com/openlayers/4.6.4/ol.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/openlayers/4.6.4/ol.js"></script>
+</head>
+<body>
+<div id="map" class="map"></div>
+<script>
+    var chartsource = new ol.source.XYZ({
+        //url: 'http://chart-source.inuorui.com/latest/{z}/{x}/{y}.png'
+        url: 'http://127.0.0.1:19797/source/tiles/{z}/{x}_{y}.png'
+    });
+    var map = new ol.Map({
+        layers: [
+            new ol.layer.Tile({
+                source: chartsource
+            }),
+            new ol.layer.Tile({
+                source: new ol.source.TileDebug({
+                    projection: 'EPSG:3857',
+                    tileGrid: chartsource.getTileGrid()
+                })
+            })
+        ],
+        target: 'map',
+        controls: ol.control.defaults({
+            attributionOptions: {
+                collapsible: false
+            }
+        }),
+        view: new ol.View({
+            center: ol.proj.transform(
+                [-179.857, 85.0083], 'EPSG:4326', 'EPSG:3857'),
+            zoom: 14
+        })
+    });
+</script>
+</body>
+</html>

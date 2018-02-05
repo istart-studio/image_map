@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Properties>
+        <Property name="basePath">./logs</Property>
+    </Properties>
+
+    <appenders>
+        <!-- console -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%-5p] %d %c - %m%n"/>
+        </Console>
+        <!-- file -->
+        <RollingFile name="InfoFile" fileName="${basePath}/app.log"
+                     filePattern="${basePath}/$${date:yyyy-MM}/app-%d{MM-dd-yyyy}-%i.log.gz">
+            <PatternLayout>
+                <pattern>%d %p %C{1.} [%t] %m%n</pattern>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="5 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+            <ThresholdFilter level="info" onMatch="ACCEPT" onMismatch="DENY"/>
+        </RollingFile>
+        <!-- file -->
+        <RollingFile name="ErrorFile" fileName="${basePath}/error.log"
+                     filePattern="${basePath}/$${date:yyyy-MM}/error-%d{MM-dd-yyyy}-%i.log.gz">
+            <PatternLayout>
+                <pattern>%d %p %C{1.} [%t] %m%n</pattern>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="5 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+            <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY"/>
+        </RollingFile>
+    </appenders>
+    <loggers>
+        <root level="info">
+            <appender-ref ref="Console"/>
+            <appender-ref ref="InfoFile"/>
+            <appender-ref ref="ErrorFile"/>
+        </root>
+    </loggers>
+</Configuration>

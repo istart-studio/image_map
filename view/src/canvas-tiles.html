@@ -1,0 +1,62 @@
+OpenLayers 3 Examples
++
+−
+© OpenStreetMap contributors.
+Canvas tiles example
+The black grid tiles are generated on the client with an HTML5 canvas. The displayed tile coordinates are OpenLayers tile coordinates. These increase from bottom to top, but standard XYZ tiling scheme coordinates increase from top to bottom. To calculate the y for a standard XYZ tile coordinate, use -y - 1.
+
+Related API documentation: ol.Map,ol.View,ol.control,ol.layer.Tile,ol.proj,ol.source.OSM,ol.source.TileDebug
+Copy  Edit
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Canvas tiles example</title>
+    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="http://openlayers.org/en/v3.8.2/css/ol.css" type="text/css">
+    <script src="http://openlayers.org/en/v3.8.2/build/ol.js"></script>
+
+</head>
+<body>
+<div class="container-fluid">
+
+    <div class="row-fluid">
+        <div class="span12">
+            <div id="map" class="map"></div>
+        </div>
+    </div>
+
+</div>
+<script>
+    var source = new ol.source.TileImage({
+        url: "http://127.0.0.1:19797/source/tiles/{z}/{x}_{y}",
+    });
+    var map = new ol.Map({
+        layers: [
+            new ol.layer.Tile({
+                source: source
+            }),
+            // new ol.layer.Tile({
+            //     source: new ol.source.TileDebug({
+            //         projection: 'EPSG:3857',
+            //         tileGrid: source.getTileGrid()
+            //     })
+            // })
+        ],
+        target: 'map',
+        controls: ol.control.defaults({
+            attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+                collapsible: false
+            })
+        }),
+        view: new ol.View({
+            center: ol.proj.transform(
+                [-0.1275, 51.507222], 'EPSG:4326', 'EPSG:3857'),
+            zoom: 9
+        })
+    });
+
+</script>
+</body>
+</html>
