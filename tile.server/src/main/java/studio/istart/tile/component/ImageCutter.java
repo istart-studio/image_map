@@ -2,12 +2,10 @@ package studio.istart.tile.component;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Range;
-import studio.istart.tile.constants.ImageProps;
 import studio.istart.tile.constants.TileConstant;
 import studio.istart.tile.constants.ZLevel;
 
 import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -42,11 +40,9 @@ public class ImageCutter {
                 BufferedImage tileImage = new BufferedImage(TileConstant.SIZE_PIXEL, TileConstant.SIZE_PIXEL, BufferedImage.TYPE_INT_RGB);
                 // scale ： 256 * 2 => 256
                 BufferedImage parentTileImage = parentTiles(x, y, parentTilesDir);
-                // 创建Graphics2D对象，用在底图对象上绘图
                 Graphics2D g2d = tileImage.createGraphics();
-                // 绘制
                 g2d.drawImage(parentTileImage, 0, 0, TileConstant.SIZE_PIXEL, TileConstant.SIZE_PIXEL, null);
-                g2d.dispose();// 释放图形上下文使用的系统资源
+                g2d.dispose();
 
                 ImageIO.write(tileImage, "JPG",
                         Paths.get(dir.getPath(), tileName).toFile());
@@ -55,9 +51,6 @@ public class ImageCutter {
     }
 
     public static BufferedImage parentTiles(int x, int y, String parentDirPath) throws IOException {
-        //parent tiles file dir
-
-
         // get 4 parent tiles
         Range<Integer> xRange = parentTilesRange(x);
         Range<Integer> yRange = parentTilesRange(y);
