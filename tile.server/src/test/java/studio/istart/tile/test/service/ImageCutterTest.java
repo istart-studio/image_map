@@ -21,9 +21,10 @@ public class ImageCutterTest {
 //                .builder(Paths.get("/Users/dongyan/Downloads/original/4_6827_13793.jpg").toFile())
 //                .cut("/Users/dongyan/Downloads/tiles");
         System.out.println("level 6 is done!");
-        //cut 5
-        ImageCutter.cutLevel(new ZLevel(5),
-                "/Users/dongyan/Downloads/tiles/6",
+        //cut sub levels
+        int level = 1;
+        ImageCutter.cutLevel(new ZLevel(level),
+                "/Users/dongyan/Downloads/tiles/" + (level + 1),
                 "/Users/dongyan/Downloads/tiles");
     }
 }

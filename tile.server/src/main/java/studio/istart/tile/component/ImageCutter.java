@@ -42,13 +42,10 @@ public class ImageCutter {
                 BufferedImage tileImage = new BufferedImage(TileConstant.SIZE_PIXEL, TileConstant.SIZE_PIXEL, BufferedImage.TYPE_INT_RGB);
                 // scale ： 256 * 2 => 256
                 BufferedImage parentTileImage = parentTiles(x, y, parentTilesDir);
-                //debug
-
-
                 // 创建Graphics2D对象，用在底图对象上绘图
                 Graphics2D g2d = tileImage.createGraphics();
                 // 绘制
-                g2d.drawImage(parentTileImage, x, y, TileConstant.SIZE_PIXEL, TileConstant.SIZE_PIXEL, null);
+                g2d.drawImage(parentTileImage, 0, 0, TileConstant.SIZE_PIXEL, TileConstant.SIZE_PIXEL, null);
                 g2d.dispose();// 释放图形上下文使用的系统资源
 
                 ImageIO.write(tileImage, "JPG",
