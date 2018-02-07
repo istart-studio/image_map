@@ -28,10 +28,10 @@ public class SourceController {
     @RequestMapping(value = "/tiles/{zLevel}/{xy}", method = RequestMethod.GET)
     public void tiles(@PathVariable String zLevel, @PathVariable String xy,
                       HttpServletResponse response) throws IOException {
-        String dir = "/Users/dongyan/Downloads/tile/tiles/tiles_files/";
+        String dir = "/Users/dongyan/Downloads/tiles";
 
         //将图片输出给浏览器
-        URI fileUri = Paths.get(dir, zLevel, xy + ".png").toUri();
+        URI fileUri = Paths.get(dir, zLevel, xy + ".jpg").toUri();
         log.info("img uri:{}", fileUri);
         File file = new File(fileUri);
         try (FileInputStream inputStream = new FileInputStream(file)) {
@@ -39,7 +39,7 @@ public class SourceController {
             inputStream.read(data);
             inputStream.close();
 
-            response.setContentType("image/png");
+            response.setContentType("image/jpg");
 
             OutputStream stream = response.getOutputStream();
             stream.write(data);
