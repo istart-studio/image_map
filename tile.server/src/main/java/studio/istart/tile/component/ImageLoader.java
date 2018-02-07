@@ -4,14 +4,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Range;
 import lombok.extern.log4j.Log4j2;
 import studio.istart.tile.constants.ImageProps;
-import studio.istart.tile.constants.TileBlockConstant;
+import studio.istart.tile.constants.TileConstant;
 import studio.istart.tile.constants.ZLevel;
 import studio.istart.tile.constants.ZLevelConstant;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -138,8 +137,8 @@ public class ImageLoader {
         return outImage;
     }
 
-    public ZLevel cut(String outDirPath) throws Exception {
-        return cut(this.zLevel, outDirPath);
+    public void cut(String outDirPath) throws Exception {
+        cut(this.zLevel, outDirPath);
     }
 
     /**
@@ -150,45 +149,42 @@ public class ImageLoader {
      * @return
      * @throws IOException
      */
-    private ZLevel cut(ZLevel zLevel, String outDirPath) throws Exception {
-        int maxTileNum = (1 << zLevel.getLevel()) - 1;
-        int maxX = maxTileNum, maxY = maxTileNum;
-        Range<Integer> tileXRange = Range.closed(0, maxX);
-        Range<Integer> tileYRange = Range.closed(0, maxY);
-
+    private void cut(ZLevel zLevel, String outDirPath) throws Exception {
+        Range<Integer> tileXRange = TileConstant.tileNumRange(this.zLevel);
+        Range<Integer> tileYRange = TileConstant.tileNumRange(this.zLevel);
+        File dir = Paths.get(outDirPath, String.valueOf(zLevel.getLevel())).toFile();
+        if (!dir.exists()) {
+            Preconditions.checkState(dir.mkdirs());
+        }
         String tileTemplate = "{x}_{y}.jpg";
         for (int x = tileXRange.lowerEndpoint(); tileXRange.contains(x); x++) {
             for (int y = tileYRange.lowerEndpoint(); tileYRange.contains(y); y++) {
                 String tileName = tileTemplate.replace("{x}", String.valueOf(x))
                         .replace("{y}", String.valueOf(y));
-                //outside of raster
-                int pixelX = TileBlockConstant.toPixelXY(x);
-                int pixelY = TileBlockConstant.toPixelXY(y);
-                int cutWidthSize = tileLength(pixelX, this.imageProps.getWidth());
-                int cutHeightSize = tileLength(pixelY, this.imageProps.getHeight());
-                if (y == 54) {
-                    System.out.println("debug:" + x + "," + y);
-                }
-
-                //todo:-31
-                BufferedImage tileImage = new BufferedImage(TileBlockConstant.SIZE_PIXEL,
-                        TileBlockConstant.SIZE_PIXEL, BufferedImage.TYPE_INT_RGB);
-                if (cutWidthSize > 0 && cutHeightSize > 0) {
-                    BufferedImage tileContent = this.srcImage.getSubimage(pixelX, pixelY,
-                            cutWidthSize, cutHeightSize);
-                    coverImage(tileImage, tileContent, 0, 0, tileImage.getTileWidth(), tileImage.getTileHeight());
-                    System.out.println("cut:" + x + "," + y);
-                }
-                File dir = Paths.get(outDirPath, String.valueOf(zLevel.getLevel())).toFile();
-                if (!dir.exists()) {
-                    Preconditions.checkState(dir.mkdirs());
-                }
+                BufferedImage tileImage = cutCurrentLevel(x, y, TileConstant.SIZE_PIXEL);
                 ImageIO.write(tileImage, "JPG",
                         Paths.get(dir.getPath(), tileName).toFile());
             }
         }
-        return this.zLevel;
     }
+
+    private BufferedImage cutCurrentLevel(int x, int y, int tileSize) throws Exception {
+        //outside of raster
+        int pixelX = TileConstant.toPixelXY(x);
+        int pixelY = TileConstant.toPixelXY(y);
+        int cutWidthSize = tileLength(pixelX, this.imageProps.getWidth(), tileSize);
+        int cutHeightSize = tileLength(pixelY, this.imageProps.getHeight(), tileSize);
+
+        //not enough size
+        BufferedImage tileImage = new BufferedImage(tileSize, tileSize, BufferedImage.TYPE_INT_RGB);
+        if (cutWidthSize > 0 && cutHeightSize > 0) {
+            BufferedImage tileContent = this.srcImage.getSubimage(pixelX, pixelY, cutWidthSize, cutHeightSize);
+            coverImage(tileImage, tileContent, 0, 0, tileImage.getTileWidth(), tileImage.getTileHeight());
+            System.out.println("cut:" + x + "," + y);
+        }
+        return tileImage;
+    }
+
 
     public static BufferedImage coverImage(BufferedImage baseBufferedImage,
                                            BufferedImage coverBufferedImage,
@@ -196,18 +192,16 @@ public class ImageLoader {
 
         // 创建Graphics2D对象，用在底图对象上绘图
         Graphics2D g2d = baseBufferedImage.createGraphics();
-
         // 绘制
         g2d.drawImage(coverBufferedImage, x, y, null);
         g2d.dispose();// 释放图形上下文使用的系统资源
-
         return baseBufferedImage;
     }
 
-    private int tileLength(int xOrY, int widthOrHeight) {
+    private int tileLength(int xOrY, int widthOrHeight, int tileSize) {
         int size = widthOrHeight - xOrY;
-        return size > TileBlockConstant.SIZE_PIXEL
-                ? TileBlockConstant.SIZE_PIXEL : size;
+        return size > tileSize
+                ? tileSize : size;
     }
 
     public static void cutAll(ImageLoader imageLoader, String outDirPath) throws IOException {
@@ -215,11 +209,6 @@ public class ImageLoader {
         ZLevelConstant.range(imageLoader.zLevel.getLevel()).forEach(zLevel -> {
             try {
                 imageLoader
-                        .setZLevel(zLevel)
-                        .zoom()
-                        .toFile(new File("/Users/dongyan/Downloads/dest/zoom_" + zLevel.getLevel() + ".jpg"))
-//                        .fill()
-                        .toFile(new File("/Users/dongyan/Downloads/dest/fill_" + zLevel.getLevel() + ".jpg"))
                         .cut(outDirPath);
             } catch (IOException e) {
                 log.error(e.getMessage(), e);

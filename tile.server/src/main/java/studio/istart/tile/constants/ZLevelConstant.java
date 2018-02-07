@@ -2,8 +2,6 @@ package studio.istart.tile.constants;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Range;
-import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.ArrayList;
@@ -37,8 +35,8 @@ public class ZLevelConstant {
      * @return
      */
     public static Optional<ZLevel> matchZLevel(int size) {
-        Preconditions.checkArgument(size > TileBlockConstant.SIZE_PIXEL,
-                "the size " + size + " must be larger " + TileBlockConstant.SIZE_PIXEL + " pixel");
+        Preconditions.checkArgument(size > TileConstant.SIZE_PIXEL,
+                "the size " + size + " must be larger " + TileConstant.SIZE_PIXEL + " pixel");
         return zLevels.stream()
                 .filter(zLevel -> zLevel.getLengthRange().contains((long) size))
                 .findFirst();

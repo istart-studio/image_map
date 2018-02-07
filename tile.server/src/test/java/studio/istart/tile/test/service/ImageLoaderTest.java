@@ -49,6 +49,12 @@ public class ImageLoaderTest {
     }
 
     @Test
+    public void cutLevel() throws Exception {
+        ZLevel zLevel = new ZLevel(5);
+
+    }
+
+    @Test
     public void cutAll() throws IOException {
         ImageLoader.cutAll(
                 ImageLoader

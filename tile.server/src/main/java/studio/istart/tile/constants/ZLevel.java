@@ -1,7 +1,6 @@
 package studio.istart.tile.constants;
 
 import com.google.common.collect.Range;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -26,11 +25,11 @@ public class ZLevel {
         this.level = level;
         int lower;
         if (MIN_LEVEL_NUM <= level && level <= MAX_LEVEL_NUM) {
-            lower = TileBlockConstant.SIZE_PIXEL << (level - 1);
+            lower = TileConstant.SIZE_PIXEL << (level - 1);
         } else {
             throw new IllegalArgumentException("the level " + level + " not in range");
         }
         this.lengthRange = Range.openClosed((long) lower,
-                (long) TileBlockConstant.SIZE_PIXEL << (long) level);
+                (long) TileConstant.SIZE_PIXEL << (long) level);
     }
 }
