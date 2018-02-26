@@ -8,6 +8,10 @@
     <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <link href="https://cdn.bootcss.com/openlayers/4.6.4/ol.css" rel="stylesheet">
     <script src="https://cdn.bootcss.com/openlayers/4.6.4/ol.js"></script>
+    <!--<link href="https://cdn.bootcss.com/openlayers/3.20.1/ol.css" rel="stylesheet">-->
+    <!--<script src="https://cdn.bootcss.com/openlayers/3.20.1/ol.js"></script>-->
+    <!--<link rel="stylesheet" href="http://openlayers.org/en/v3.8.2/css/ol.css" type="text/css">-->
+    <!--<script src="http://openlayers.org/en/v3.8.2/build/ol.js"></script>-->
     <style>
         body {
             padding-top: 20px;
@@ -31,6 +35,9 @@
                 <button type="button" class="btn btn-primary" data-toggle="modal" data-target=".bs-example-modal-sm">
                     Small modal
                 </button>
+                <button onclick="setBrightness()">setBrightness</button>
+                <button onclick="setContrast()">setContrast</button>
+                <button onclick="setSaturation()">setSaturation</button>
             </div>
         </div>
         <div class="panel-body">
@@ -50,7 +57,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-default" onclick="cancelArea()">删除</button>
                     <button type="button" class="btn btn-primary" onclick="saveArea()">保存</button>
                 </div>
             </div>
@@ -63,18 +70,17 @@
         url: 'http://127.0.0.1:19797/source/tiles/{z}/{x}_{y}.png'
     });
     var maxZoom = 6;//todo:获取最大zoom
+    var sourceLayer = new ol.layer.Tile({
+        source: chartSource,
+    });
+    var gridLayer = new ol.layer.Tile({
+        source: new ol.source.TileDebug({
+            projection: 'EPSG:3857',
+            tileGrid: chartSource.getTileGrid()
+        })
+    });
     var map = new ol.Map({
-        layers: [
-            new ol.layer.Tile({
-                source: chartSource
-            }),
-            new ol.layer.Tile({
-                source: new ol.source.TileDebug({
-                    projection: 'EPSG:3857',
-                    tileGrid: chartSource.getTileGrid()
-                })
-            })
-        ],
+        layers: [sourceLayer],
         target: 'map',
         controls: ol.control.defaults({
             attributionOptions: {
@@ -91,12 +97,35 @@
     });
 
     //area array
-    var areas = [];
-    areas.push({id: 'x', pos: [], desc: ''})
+
+
     //area 创建绘制层并将绘制层添加到地图容器中：
-    var features = new ol.Collection();//要素集合
+    var features = new ol.Collection();
+    //todo:加载区域
+    var areas = [];
+    function init() {
+        //todo:get area data from server
+        var coordinates = [[-12797080.109532805, 4022137.926280178],[-11872537.228238024, -7341320.333278604],  [-2827558.550325237, 3351899.84376161],  [-12797080.109532805, 4022137.926280178]];
+        var polygon_feature = new ol.Feature({
+            id:"example_1",
+            geometry: new ol.geom.Polygon(
+                [coordinates]
+            )
+        });
+        features.push(polygon_feature);
+        coordinates = [[-11642262.32022896, 7854076.6396155],[-15733513.652021743, 184329.08803826757], [-5937912.6073914245, 2316053.900326509],  [-11642262.32022896, 7854076.6396155]];
+        var polygon_feature = new ol.Feature({
+            id:"example_2",
+            geometry: new ol.geom.Polygon(
+                [coordinates]
+            )
+        });
+        features.push(polygon_feature);
+    }
     var featureOverlay = new ol.layer.Vector({
-        source: new ol.source.Vector({features: features}),
+        source: new ol.source.Vector({
+            features: features
+        }),
         style: new ol.style.Style({
             fill: new ol.style.Fill({
                 color: 'rgba(255,255,255,0.3)'
@@ -130,17 +159,17 @@
         })
         draw.on('drawend', function (event) {//绘画完成触发时间
             event.feature.setProperties({//id等基本属性
-                'id': baseId + new Date().getUTCMilliseconds(),
+                'id': baseId + new Date().getTime(),
             });
             map.removeInteraction(draw);//移除绘画互动
         });
     }
 
 
-    //todo:点击画好的区域
+    //选取区域
     var selectedAreaId;
+    var selectedAreaPos;
     var select = new ol.interaction.Select();
-    //        overlay.setPosition();
     map.addInteraction(select);
     select.on('select', function (e) {
         console.log("getFeatures length:" + e.target.getFeatures().getLength());
@@ -155,21 +184,56 @@
             console.log(selectedArea.get('id'));
             selectedAreaId = selectedArea.get('id');
             if (selectedAreaId) {
+                selectedAreaPos = selectedArea.getGeometry().getCoordinates();
                 $('#areaInfoModal').modal();
             }
         }
     });
 
-    //todo:增加区域信息
+    //保存区域信息
     function saveArea() {
         console.log("提交区域信息:")
         var areaInfo = {id: "", content: ""};
         areaInfo.id = selectedAreaId;
         areaInfo.content = $("#area_content").val();
         console.log(areaInfo);
+        //push local varchar
+        //post server api
     }
 
-    //todo:加载区域
+    function cancelArea() {
+        //push local varchar
+        //post server api
+    }
+
+
+    //todo:map 亮度 饱和度 对比度
+    if (!ol.has.WEBGL) {
+        alert("not support WEBGL!");
+    }
+
+    function setBrightness() {
+//        console.log(chartSource.getBrightness());
+        chartSource.setProperties(
+            {
+                brightness: 100,
+                contrast: 100,
+            })
+//        sourceLayer.setBrightness(Math.min(sourceLayer.getBrightness() + 0.125, 1));
+    }
+
+    //对比度
+    function setContrast() {
+        sourceLayer.setContrast(Math.min(sourceLayer.getContrast() + 0.125, 1));
+    }
+
+    //饱和度
+    function setSaturation() {
+        sourceLayer.setSaturation(Math.min(sourceLayer.getSaturation() + 0.125, 1));
+    }
+
+    //start
+    init();
 
 </script>
 </body>

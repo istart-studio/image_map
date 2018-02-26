@@ -40,35 +40,12 @@ public class SourceController {
             inputStream.close();
 
             response.setContentType("image/jpg");
+            response.setHeader("Access-Control-Allow-Origin", "*");
 
             OutputStream stream = response.getOutputStream();
             stream.write(data);
             stream.flush();
             stream.close();
-        }
-    }
-
-    @RequestMapping(value = "", method = RequestMethod.GET)
-    public void image(@RequestParam String imageName, HttpServletResponse response) throws IOException {
-        String dir = "/Users/dongyan/Downloads/图片/";
-
-        //将图片输出给浏览器
-        URI fileUri = Paths.get(dir, imageName).toUri();
-        log.info("img uri:{}", fileUri);
-        File file = new File(fileUri);
-        try (FileInputStream inputStream = new FileInputStream(file)) {
-            byte[] data = new byte[(int) file.length()];
-            inputStream.read(data);
-            inputStream.close();
-
-            response.setContentType("image/jpg");
-
-            OutputStream stream = response.getOutputStream();
-            stream.write(data);
-            stream.flush();
-            stream.close();
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
         }
     }
 }
