@@ -2,45 +2,76 @@
 <html>
 <head>
     <title>Canvas Tiles</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <link href="https://cdn.bootcss.com/openlayers/4.6.4/ol.css" rel="stylesheet">
     <script src="https://cdn.bootcss.com/openlayers/4.6.4/ol.js"></script>
-    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <style>
+        body {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+
+        .map {
+            border-radius: 6px;
+            border-width: 1px;
+        }
+    </style>
 </head>
 <body>
-<div id="menu">
-    <input type="button" value="绘制网格" onclick="addInteraction()"/>
-</div>
-<div id="map" class="map">
-    <div id="contextmenu_container1" class="contextmenu">
-        <ul>
-            <li><a href="#">按钮功能1</a></li>
-            <li><a href="#">按钮功能2</a></li>
-            <li><a href="#">按钮功能3</a></li>
-        </ul>
+<div class="container">
+    <!-- draw pen -->
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <div class="btn-group" role="group" aria-label="...">
+                <a class="btn btn-default" onclick="addInteraction()">
+                    <span class="glyphicon glyphicon-pencil"></span><span>标绘</span></a>
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target=".bs-example-modal-sm">
+                    Small modal
+                </button>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div id="map" class="map">
+            </div>
+        </div>
     </div>
-    <div id="contextmenu_container2" class="contextmenu">
-        <ul>
-            <li><a href="#">区域按钮功能4</a></li>
-            <li><a href="#">区域按钮功能5</a></li>
-            <li><a href="#">区域按钮功能6</a></li>
-        </ul>
+    <!-- modal -->
+    <div id='areaInfoModal' class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog"
+         aria-labelledby="mySmallModalLabel">
+        <div class="modal-dialog modal-sm" role="document">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>内容</label>
+                        <textarea id="area_content" class="form-control" placeholder="内容"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary" onclick="saveArea()">保存</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 <script>
     //map
-    var chartsource = new ol.source.XYZ({
-        //url: 'http://chart-source.inuorui.com/latest/{z}/{x}/{y}.png'
+    var chartSource = new ol.source.XYZ({
         url: 'http://127.0.0.1:19797/source/tiles/{z}/{x}_{y}.png'
     });
+    var maxZoom = 6;//todo:获取最大zoom
     var map = new ol.Map({
         layers: [
             new ol.layer.Tile({
-                source: chartsource
+                source: chartSource
             }),
             new ol.layer.Tile({
                 source: new ol.source.TileDebug({
                     projection: 'EPSG:3857',
-                    tileGrid: chartsource.getTileGrid()
+                    tileGrid: chartSource.getTileGrid()
                 })
             })
         ],
@@ -52,11 +83,16 @@
         }),
         view: new ol.View({
             center: ol.proj.transform(
-                [-179.857, 85.0083], 'EPSG:4326', 'EPSG:3857'),
+                [0, 0], 'EPSG:4326', 'EPSG:3857'),
             zoom: 1,
-            maxZoom: 6,
+            minZoom: 1,
+            maxZoom: maxZoom,
         })
     });
+
+    //area array
+    var areas = [];
+    areas.push({id: 'x', pos: [], desc: ''})
     //area 创建绘制层并将绘制层添加到地图容器中：
     var features = new ol.Collection();//要素集合
     var featureOverlay = new ol.layer.Vector({
@@ -67,7 +103,7 @@
             }),
             stroke: new ol.style.Stroke({
                 color: '#ffcc33',
-                width: 2
+                width: 1
             }),
             image: new ol.style.Circle({
                 radius: 7,
@@ -78,53 +114,63 @@
         }),
     });
     featureOverlay.setMap(map);//将绘制层添加到地图容器中
+
     //绘画图形：
     var draw;
+    var baseId = "imageId_userId_";
 
     function addInteraction() {
         draw = new ol.interaction.Draw({
             features: features,
-            type: 'Polygon',//多边形
+            type: "Polygon",
         });
         map.addInteraction(draw);
+        draw.on('drawstart', function (event) {
+            selectedAreaId = undefined;
+        })
         draw.on('drawend', function (event) {//绘画完成触发时间
+            event.feature.setProperties({//id等基本属性
+                'id': baseId + new Date().getUTCMilliseconds(),
+            });
             map.removeInteraction(draw);//移除绘画互动
         });
     }
 
-    //创建菜单并添加进地图：
-    //地图区域右键菜单栏
-    var menu_overlay1 = new ol.Overlay({
-        element: document.getElementById("contextmenu_container1"),
-        positioning: 'center-center'
-    });
-    //图形区域右键菜单功能栏
-    var menu_overlay2 = new ol.Overlay({
-        element: document.getElementById("contextmenu_container2"),
-        positioning: 'center-center'
-    });
-    menu_overlay1.setMap(map);
-    menu_overlay2.setMap(map);
-    //为鼠标右键添加点击事件：
-    $(map.getViewport()).on("contextmenu", function (event) {
-        var pixel = map.getEventPixel(event.originalEvent);//获取鼠标当前像素点
-        var hit = map.hasFeatureAtPixel(pixel);//通过像素点判断当前鼠标上是否有图形
-        var coordinate = map.getEventCoordinate(event);//获取鼠标坐标
-        event.preventDefault();//取消右键默认行为
-        if (hit) {
-            menu_overlay1.setPosition(undefined);//将menu_overlay1隐藏
-            menu_overlay2.setPosition(coordinate);//在鼠标位置展示menu_overlay2
-        } else {
-            menu_overlay2.setPosition(undefined);//将menu_overlay2隐藏
-            menu_overlay1.setPosition(coordinate);//在鼠标位置展示menu_overlay1
+
+    //todo:点击画好的区域
+    var selectedAreaId;
+    var select = new ol.interaction.Select();
+    //        overlay.setPosition();
+    map.addInteraction(select);
+    select.on('select', function (e) {
+        console.log("getFeatures length:" + e.target.getFeatures().getLength());
+        //层叠 选择第一个区域
+        var selectedArea = e.selected[0];
+        if (selectedArea) {
+            // get Feature
+            console.log(selectedArea);
+            // get Properties
+//        console.log(selectedArea.getProperties());
+            // get one specific Property
+            console.log(selectedArea.get('id'));
+            selectedAreaId = selectedArea.get('id');
+            if (selectedAreaId) {
+                $('#areaInfoModal').modal();
+            }
         }
     });
-    //点击鼠标左键后菜单消失：
-    $(map.getViewport()).on("click", function (e) {
-        e.preventDefault();
-        menu_overlay1.setPosition(undefined);
-        menu_overlay2.setPosition(undefined);
-    });
+
+    //todo:增加区域信息
+    function saveArea() {
+        console.log("提交区域信息:")
+        var areaInfo = {id: "", content: ""};
+        areaInfo.id = selectedAreaId;
+        areaInfo.content = $("#area_content").val();
+        console.log(areaInfo);
+    }
+
+    //todo:加载区域
+
 </script>
 </body>
 </html>
