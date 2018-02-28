@@ -1,4 +1,4 @@
-package studio.istart.tile.service;
+package studio.istart.tile.component;
 
 import com.google.common.collect.Range;
 import studio.istart.tile.model.ZoomLevel;
@@ -8,7 +8,7 @@ import studio.istart.tile.model.ZoomLevel;
  * @version 1.0.0
  * @since 1.8
  */
-public class TileService {
+public class TileComponent {
 
     /**
      * tile size must be larger the SIZE_PIXEL

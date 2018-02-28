@@ -3,10 +3,8 @@ package studio.istart.tile.component;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
-import io.swagger.models.auth.In;
 import lombok.extern.log4j.Log4j2;
 import studio.istart.tile.model.ZoomLevel;
-import studio.istart.tile.service.TileService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,8 +38,8 @@ public class ZoomLevelComponent {
      * @return
      */
     public static Optional<ZoomLevel> matchZLevel(int size) {
-        Preconditions.checkArgument(size > TileService.SIZE_PIXEL,
-                "the size " + size + " must be larger " + TileService.SIZE_PIXEL + " pixel");
+        Preconditions.checkArgument(size > TileComponent.SIZE_PIXEL,
+                "the size " + size + " must be larger " + TileComponent.SIZE_PIXEL + " pixel");
         return zLevels.stream()
                 .filter(zLevel -> zLevel.getLengthRange().contains((long) size))
                 .findFirst();

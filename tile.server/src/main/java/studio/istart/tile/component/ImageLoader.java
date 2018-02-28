@@ -5,7 +5,6 @@ import com.google.common.collect.Range;
 import lombok.extern.log4j.Log4j2;
 import studio.istart.tile.model.ImageProps;
 import studio.istart.tile.model.ZoomLevel;
-import studio.istart.tile.service.TileService;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -166,8 +165,8 @@ public class ImageLoader {
      * @throws IOException
      */
     private void cut(ZoomLevel zLevel, String baseDir, String imageId) throws Exception {
-        Range<Integer> tileXRange = TileService.tileNumRange(zLevel);
-        Range<Integer> tileYRange = TileService.tileNumRange(zLevel);
+        Range<Integer> tileXRange = TileComponent.tileNumRange(zLevel);
+        Range<Integer> tileYRange = TileComponent.tileNumRange(zLevel);
         File dir = tilesDir(baseDir, imageId, zLevel);
         if (!dir.exists()) {
             Preconditions.checkState(dir.mkdirs());
@@ -177,7 +176,7 @@ public class ImageLoader {
             for (int y = tileYRange.lowerEndpoint(); tileYRange.contains(y); y++) {
                 String tileName = tileTemplate.replace("{x}", String.valueOf(x))
                         .replace("{y}", String.valueOf(y));
-                BufferedImage tileImage = cutCurrentLevel(x, y, TileService.SIZE_PIXEL);
+                BufferedImage tileImage = cutCurrentLevel(x, y, TileComponent.SIZE_PIXEL);
                 ImageIO.write(tileImage, "JPG",
                         Paths.get(dir.getPath(), tileName).toFile());
             }
@@ -186,8 +185,8 @@ public class ImageLoader {
 
     private BufferedImage cutCurrentLevel(int x, int y, int tileSize) throws Exception {
         //outside of raster
-        int pixelX = TileService.toPixelXY(x);
-        int pixelY = TileService.toPixelXY(y);
+        int pixelX = TileComponent.toPixelXY(x);
+        int pixelY = TileComponent.toPixelXY(y);
         int cutWidthSize = tileLength(pixelX, this.imageProps.getWidth(), tileSize);
         int cutHeightSize = tileLength(pixelY, this.imageProps.getHeight(), tileSize);
 
@@ -239,8 +238,8 @@ public class ImageLoader {
     public static void cut(final ZoomLevel zLevel, final ZoomLevel parentZoomLevel,
                            String baseDir, String imageId) throws Exception {
         //z总瓦片数
-        Range<Integer> tileXRange = TileService.tileNumRange(zLevel);
-        Range<Integer> tileYRange = TileService.tileNumRange(zLevel);
+        Range<Integer> tileXRange = TileComponent.tileNumRange(zLevel);
+        Range<Integer> tileYRange = TileComponent.tileNumRange(zLevel);
         //存放路径
         File dir = tilesDir(baseDir, imageId, zLevel);
         File parentTilesDir = tilesDir(baseDir, imageId, parentZoomLevel);
@@ -250,11 +249,11 @@ public class ImageLoader {
             for (int y = tileYRange.lowerEndpoint(); tileYRange.contains(y); y++) {
                 String tileName = tileTemplate.replace("{x}", String.valueOf(x)).replace("{y}", String.valueOf(y));
                 log.info("sub tileName:" + tileName);
-                BufferedImage tileImage = new BufferedImage(TileService.SIZE_PIXEL, TileService.SIZE_PIXEL, BufferedImage.TYPE_INT_RGB);
+                BufferedImage tileImage = new BufferedImage(TileComponent.SIZE_PIXEL, TileComponent.SIZE_PIXEL, BufferedImage.TYPE_INT_RGB);
                 // scale ： 256 * 2 => 256
                 BufferedImage parentTileImage = margeParentTiles(x, y, parentTilesDir.getPath());
                 Graphics2D g2d = tileImage.createGraphics();
-                g2d.drawImage(parentTileImage, 0, 0, TileService.SIZE_PIXEL, TileService.SIZE_PIXEL, null);
+                g2d.drawImage(parentTileImage, 0, 0, TileComponent.SIZE_PIXEL, TileComponent.SIZE_PIXEL, null);
                 g2d.dispose();
 
                 ImageIO.write(tileImage, "JPG",
@@ -268,8 +267,8 @@ public class ImageLoader {
         Range<Integer> xRange = parentTilesRange(x);
         Range<Integer> yRange = parentTilesRange(y);
         //draw 512(256*2) * 512(256*2)
-        BufferedImage margeImage = new BufferedImage(TileService.SIZE_PIXEL * 2,
-                TileService.SIZE_PIXEL * 2, BufferedImage.TYPE_INT_RGB);
+        BufferedImage margeImage = new BufferedImage(TileComponent.SIZE_PIXEL * 2,
+                TileComponent.SIZE_PIXEL * 2, BufferedImage.TYPE_INT_RGB);
         for (int parentX = xRange.lowerEndpoint(), xIndex = 0;
              parentX < xRange.upperEndpoint() + 1; parentX++, xIndex++) {
             for (int parentY = yRange.lowerEndpoint(), yIndex = 0;
@@ -281,8 +280,8 @@ public class ImageLoader {
                 Graphics margeImageGraphics = margeImage.getGraphics();
                 log.info("xIndex:" + xIndex);
                 log.info("yIndex:" + yIndex);
-                int pointX = xIndex * TileService.SIZE_PIXEL;
-                int pointY = yIndex * TileService.SIZE_PIXEL;
+                int pointX = xIndex * TileComponent.SIZE_PIXEL;
+                int pointY = yIndex * TileComponent.SIZE_PIXEL;
                 log.info("pointX:" + pointX);
                 log.info("pointY:" + pointY);
                 margeImageGraphics.drawImage(tileImage, pointX, pointY, null);

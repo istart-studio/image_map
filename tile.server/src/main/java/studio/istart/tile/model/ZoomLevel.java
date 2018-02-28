@@ -3,10 +3,8 @@ package studio.istart.tile.model;
 import com.google.common.collect.Range;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import studio.istart.tile.service.TileService;
+import studio.istart.tile.component.TileComponent;
 
-import static studio.istart.tile.component.ZoomLevelComponent.MAX_LEVEL_NUM;
-import static studio.istart.tile.component.ZoomLevelComponent.MIN_LEVEL_NUM;
 import static studio.istart.tile.component.ZoomLevelComponent.ZOOM_LEVEL_RANGE;
 
 /**
@@ -27,11 +25,11 @@ public class ZoomLevel {
         this.level = level;
         int lower;
         if (ZOOM_LEVEL_RANGE.contains(level)) {
-            lower = TileService.SIZE_PIXEL << (level - 1);
+            lower = TileComponent.SIZE_PIXEL << (level - 1);
         } else {
             throw new IllegalArgumentException("the level " + level + " not in range");
         }
         this.lengthRange = Range.openClosed((long) lower,
-                (long) TileService.SIZE_PIXEL << (long) level);
+                (long) TileComponent.SIZE_PIXEL << (long) level);
     }
 }
