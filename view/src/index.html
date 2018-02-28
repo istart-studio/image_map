@@ -66,10 +66,13 @@
 </div>
 <script>
     //map
+    //todo:服务器获取 图片基本信息,当前操作用户基本信息
+    var userinfo = {id:''};
+    var imageInfo = {maxLevel: 6, name: "4_6827_13793"};
     var chartSource = new ol.source.XYZ({
-        url: 'http://127.0.0.1:19797/source/tiles/{z}/{x}_{y}.png'
+        url: 'http://127.0.0.1:19797/source/tiles/' + imageInfo.name + '/{z}/{x}_{y}'
     });
-    var maxZoom = 6;//todo:获取最大zoom
+    var maxZoom = imageInfo.maxLevel;
     var sourceLayer = new ol.layer.Tile({
         source: chartSource,
     });

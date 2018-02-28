@@ -55,9 +55,17 @@ public class ImageLoader {
         return this;
     }
 
+    public String getName() {
+        return this.name;
+    }
+
     public ImageLoader setZLevel(ZoomLevel zLevel) {
         this.zLevel = zLevel;
         return this;
+    }
+
+    public int getMaxZoomLevel() {
+        return this.zLevel.getLevel();
     }
 
     private ImageLoader setZLevel() {
@@ -75,8 +83,8 @@ public class ImageLoader {
 
     @Deprecated
     public ImageLoader zoom() {
-        //out of memory , this.zLevel > 5
-        if (this.zLevel.getLevel() != this.imageProps.getZLevel() && this.zLevel.getLevel() < 6) {
+        // throw "out of memory" exception if this.zLevel > 5
+        if (this.zLevel.getLevel() < 6) {
             this.setImage(zoom(this.zLevel, this.imageProps, this.srcImage));
         }
         return this;
@@ -85,10 +93,6 @@ public class ImageLoader {
     public ImageLoader toFile(File outFile) throws IOException {
 
         return this;
-    }
-
-    public static void toFile(BufferedImage srcImage, File outFile) throws IOException {
-        ImageIO.write(srcImage, "JPG", outFile);
     }
 
     public static double caleZoomRate(ZoomLevel z, ImageProps imageProps) {
