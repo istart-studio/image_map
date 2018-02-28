@@ -30,14 +30,11 @@
     <div class="panel panel-default">
         <div class="panel-heading">
             <div class="btn-group" role="group" aria-label="...">
-                <a class="btn btn-default" onclick="addInteraction()">
+                <a class="btn btn-primary" onclick="addInteraction()">
                     <span class="glyphicon glyphicon-pencil"></span><span>标绘</span></a>
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target=".bs-example-modal-sm">
-                    Small modal
-                </button>
-                <button onclick="setBrightness()">setBrightness</button>
-                <button onclick="setContrast()">setContrast</button>
-                <button onclick="setSaturation()">setSaturation</button>
+                <button class="btn btn-primary" onclick="setBrightness()">setBrightness</button>
+                <button class="btn btn-primary" onclick="setContrast()">setContrast</button>
+                <button class="btn btn-primary" onclick="setSaturation()">setSaturation</button>
             </div>
         </div>
         <div class="panel-body">
@@ -67,7 +64,7 @@
 <script>
     //map
     //todo:服务器获取 图片基本信息,当前操作用户基本信息
-    var userinfo = {id:''};
+    var userinfo = {id: ''};
     var imageInfo = {maxLevel: 6, name: "4_6827_13793"};
     var chartSource = new ol.source.XYZ({
         url: 'http://127.0.0.1:19797/source/tiles/' + imageInfo.name + '/{z}/{x}_{y}'
