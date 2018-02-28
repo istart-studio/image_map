@@ -149,7 +149,7 @@
 
     //绘画图形：
     var draw;
-    var baseId = "imageId_userId_";
+    var baseId = imageInfo.name + "_" + userinfo.id + "_";
 
     function addInteraction() {
         draw = new ol.interaction.Draw({
@@ -175,20 +175,25 @@
     var selectCtrl = new ol.interaction.Select();
     map.addInteraction(selectCtrl);
     selectCtrl.on('select', function (e) {
-        console.log("getFeatures length:" + e.target.getFeatures().getLength());
+        console.log("select features length:" + e.target.getFeatures().getLength());
         //层叠 选择第一个区域
         var selectedArea = e.selected[0];
+        console.log(selectedArea);
         if (selectedArea) {
-            // get Feature
-            console.log(selectedArea);
-            console.log(selectedArea.get('id'));
             selectedAreaId = selectedArea.get('id');
+            console.log(selectedAreaId);
             if (selectedAreaId) {
                 selectedAreaPos = selectedArea.getGeometry().getCoordinates();
                 $('#areaInfoModal').modal();
             }
         }
     });
+    //        selectCtrl.getFeatures().on('add', function (event) {
+    //            var properties = event.element.getProperties();
+    //            selectedAreaId = properties.id;
+    //            selectedAreaPos = event.element.getGeometry().getCoordinates();
+    //            $('#areaInfoModal').modal();
+    //        });
 
     //保存区域信息
     function saveArea() {
@@ -203,10 +208,11 @@
 
     function cancelArea() {
         //remove local varchar
-        var features = areaLayer.getSource().getFeatures();
+        var features = areaLayerSource.getFeatures();
         features.forEach(function (feature) {
             if (feature.get('id') === selectedAreaId) {
-                areaLayer.getSource().removeFeature(feature);
+                selectCtrl.getFeatures().clear();
+                areaLayerSource.removeFeature(feature);
             }
         });
         $('#areaInfoModal').modal('hide');
