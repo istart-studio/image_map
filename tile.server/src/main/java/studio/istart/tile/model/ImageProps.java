@@ -1,10 +1,8 @@
-package studio.istart.tile.constants;
+package studio.istart.tile.model;
 
-import com.google.common.base.Preconditions;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.ToString;
+import studio.istart.tile.component.ZoomLevelComponent;
 
 import java.awt.image.BufferedImage;
 
@@ -26,6 +24,6 @@ public class ImageProps {
         this.width = image.getTileWidth();
         this.height = image.getTileHeight();
         this.maxLength = width > height ? width : height;
-        this.zLevel = ZLevelConstant.matchZLevel(this.maxLength).get().getLevel();
+        this.zLevel = ZoomLevelComponent.matchZLevel(this.maxLength).get().getLevel();
     }
 }

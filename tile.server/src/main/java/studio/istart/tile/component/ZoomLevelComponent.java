@@ -1,8 +1,12 @@
-package studio.istart.tile.constants;
+package studio.istart.tile.component;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Range;
+import io.swagger.models.auth.In;
 import lombok.extern.log4j.Log4j2;
+import studio.istart.tile.model.ZoomLevel;
+import studio.istart.tile.service.TileService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,18 +19,19 @@ import java.util.stream.Collectors;
  * @since 1.8
  */
 @Log4j2
-public class ZLevelConstant {
+public class ZoomLevelComponent {
 
     public static final int MIN_LEVEL_NUM = 1;
     public static final int MAX_LEVEL_NUM = 23;
-    public static ArrayList<ZLevel> zLevels;
+    public static final Range<Integer> ZOOM_LEVEL_RANGE = Range.closed(MIN_LEVEL_NUM, MAX_LEVEL_NUM);
+    public static ArrayList<ZoomLevel> zLevels;
 
     static {
         zLevels = Lists.newArrayListWithCapacity(MAX_LEVEL_NUM + 1);
         for (int levelNum = MIN_LEVEL_NUM;
              levelNum < MAX_LEVEL_NUM + 1;
              levelNum++) {
-            zLevels.add(new ZLevel(levelNum));
+            zLevels.add(new ZoomLevel(levelNum));
         }
     }
 
@@ -34,15 +39,15 @@ public class ZLevelConstant {
      * @param size image largest size (width or height)
      * @return
      */
-    public static Optional<ZLevel> matchZLevel(int size) {
-        Preconditions.checkArgument(size > TileConstant.SIZE_PIXEL,
-                "the size " + size + " must be larger " + TileConstant.SIZE_PIXEL + " pixel");
+    public static Optional<ZoomLevel> matchZLevel(int size) {
+        Preconditions.checkArgument(size > TileService.SIZE_PIXEL,
+                "the size " + size + " must be larger " + TileService.SIZE_PIXEL + " pixel");
         return zLevels.stream()
                 .filter(zLevel -> zLevel.getLengthRange().contains((long) size))
                 .findFirst();
     }
 
-    public static List<ZLevel> range(int z) {
+    public static List<ZoomLevel> range(int z) {
         Preconditions.checkArgument(MIN_LEVEL_NUM <= z && z <= MAX_LEVEL_NUM);
         return zLevels.stream()
                 .filter(zLevel -> zLevel.getLevel() <= z)

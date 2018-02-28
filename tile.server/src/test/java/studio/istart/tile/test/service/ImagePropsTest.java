@@ -1,7 +1,7 @@
 package studio.istart.tile.test.service;
 
 import org.junit.Test;
-import studio.istart.tile.constants.ImageProps;
+import studio.istart.tile.model.ImageProps;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;

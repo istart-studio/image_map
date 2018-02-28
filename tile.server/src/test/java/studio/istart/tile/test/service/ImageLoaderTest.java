@@ -2,7 +2,7 @@ package studio.istart.tile.test.service;
 
 import org.junit.Test;
 import studio.istart.tile.component.ImageLoader;
-import studio.istart.tile.constants.ZLevel;
+import studio.istart.tile.model.ZoomLevel;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,19 +15,21 @@ import java.io.IOException;
 public class ImageLoaderTest {
 
     @Test
+    @Deprecated
     public void zoom() throws IOException {
         ImageLoader
                 .builder(new File("/Users/dongyan/Downloads/original/4_6827_13793.jpg"))
-                .setZLevel(new ZLevel(1))
+                .setZLevel(new ZoomLevel(1))
                 .zoom()
                 .toFile(new File("/Users/dongyan/Downloads/dest/zoom.jpg"));
     }
 
     @Test
+    @Deprecated
     public void fill() throws IOException {
         ImageLoader
                 .builder(new File("/Users/dongyan/Downloads/original/4_6827_13793.jpg"))
-                .setZLevel(new ZLevel(1))
+                .setZLevel(new ZoomLevel(1))
                 .zoom()
                 .toFile(new File("/Users/dongyan/Downloads/dest/zoom.jpg"))
                 .fill()
@@ -36,29 +38,8 @@ public class ImageLoaderTest {
 
     @Test
     public void cut() throws Exception {
-        for (int z = 1; z < 7; z++) {
-            ImageLoader
-                    .builder(new File("/Users/dongyan/Downloads/original/4_6827_13793.jpg"))
-                    .setZLevel(new ZLevel(z))
-                    .zoom()
-//                .toFile(new File("/Users/dongyan/Downloads/dest/zoom.jpg"))
-//                .fill()
-//                .toFile(new File("/Users/dongyan/Downloads/dest/fill.jpg"))
-                    .cut("/Users/dongyan/Downloads/tiles");
-        }
-    }
-
-    @Test
-    public void cutLevel() throws Exception {
-        ZLevel zLevel = new ZLevel(5);
-
-    }
-
-    @Test
-    public void cutAll() throws IOException {
-        ImageLoader.cutAll(
-                ImageLoader
-                        .builder(new File("/Users/dongyan/Downloads/original/4_6827_13793.jpg")),
-                "/Users/dongyan/Downloads/tiles");
+        ImageLoader
+                .builder(new File("/Users/dongyan/Downloads/original/4_6827_13793.jpg"))
+                .cut(new ZoomLevel(1), "/Users/dongyan/Downloads/tiles");
     }
 }
