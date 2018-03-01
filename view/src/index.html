@@ -6,12 +6,12 @@
     <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
     <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    <link href="https://cdn.bootcss.com/openlayers/4.6.4/ol.css" rel="stylesheet">
-    <script src="https://cdn.bootcss.com/openlayers/4.6.4/ol.js"></script>
+    <link href="https://cdn.bootcss.com/openlayers/4.6.4/ol-debug.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/openlayers/4.6.4/ol-debug.js"></script>
     <!--<link href="https://cdn.bootcss.com/openlayers/3.20.1/ol.css" rel="stylesheet">-->
     <!--<script src="https://cdn.bootcss.com/openlayers/3.20.1/ol.js"></script>-->
-    <!--<link href="https://cdn.bootcss.com/openlayers/3.8.2/ol.css" rel="stylesheet">-->
-    <!--<script src="https://cdn.bootcss.com/openlayers/3.8.2/ol.js"></script>-->
+    <!--<link href="https://cdn.bootcss.com/openlayers/3.8.2/ol-debug.css" rel="stylesheet">-->
+    <!--<script src="https://cdn.bootcss.com/openlayers/3.8.2/ol-debug.js"></script>-->
     <style>
         body {
             padding-top: 20px;
@@ -26,16 +26,30 @@
 </head>
 <body>
 <div class="container">
-    <!-- draw pen -->
     <div class="panel panel-default">
         <div class="panel-heading">
             <div class="btn-group" role="group" aria-label="...">
+                <!-- draw pen -->
                 <a class="btn btn-primary" onclick="addInteraction()">
                     <span class="glyphicon glyphicon-pencil"></span><span>标绘</span></a>
-                <button class="btn btn-primary" onclick="setBrightness()">setBrightness</button>
-                <button class="btn btn-primary" onclick="setContrast()">setContrast</button>
-                <button class="btn btn-primary" onclick="setSaturation()">setSaturation</button>
             </div>
+            <table class="controls">
+                <tr>
+                    <td>hue</td>
+                    <td><span id="hueOut"></span>°</td>
+                    <td><input id="hue" type="range" min="-180" max="180" value="0"/></td>
+                </tr>
+                <tr>
+                    <td>chroma</td>
+                    <td><span id="chromaOut"></span> %</td>
+                    <td><input id="chroma" type="range" min="0" max="100" value="100"/></td>
+                </tr>
+                <tr>
+                    <td>lightness</td>
+                    <td><span id="lightnessOut"></span> %</td>
+                    <td><input id="lightness" type="range" min="0" max="100" value="100"/></td>
+                </tr>
+            </table>
         </div>
         <div class="panel-body">
             <div id="map" class="map">
@@ -63,24 +77,199 @@
 </div>
 <script>
     //map
-    //todo:服务器获取 图片基本信息,当前操作用户基本信息
-    var userinfo = {id: ''};
-    var imageInfo = {maxLevel: 6, name: "4_6827_13793"};
+
+    var userinfo = {};
+    var imageInfo = {};
+    var areaInfo = [];
+
+    //todo:服务器获取 图片基本信息,当前操作用户基本信息,当前用户的区域信息
+    function requestData() {
+        userinfo = {userId: "demo_user_id_1"};
+        areaInfo = [{
+            areaId: 'area_id_1',
+            coordinates: [[-12797080.109532805, 4022137.926280178], [-11872537.228238024, -7341320.333278604], [-2827558.550325237, 3351899.84376161], [-12797080.109532805, 4022137.926280178]]
+        },
+            {
+                areaId: 'area_id_2',
+                coordinates: [[-11642262.32022896, 7854076.6396155], [-15733513.652021743, 184329.08803826757], [-5937912.6073914245, 2316053.900326509], [-11642262.32022896, 7854076.6396155]]
+            }
+        ];
+        imageInfo = {maxLevel: 6, name: "thumbnail4"};
+    }
+
+    //request data form server
+    requestData();
+
+    function init() {
+        if (!ol.has.WEBGL) {
+            alert("not support WEBGL!");
+        }
+
+        // var coordinates = [[-12797080.109532805, 4022137.926280178], [-11872537.228238024, -7341320.333278604], [-2827558.550325237, 3351899.84376161], [-12797080.109532805, 4022137.926280178]];
+        // var polygon_feature = new ol.Feature({
+        //     id: "example_1",
+        //     geometry: new ol.geom.Polygon(
+        //         [coordinates]
+        //     )
+        // });
+        // features.push(polygon_feature);
+
+
+        // init area data
+        initAreaFeatures();
+
+    }
+
     var chartSource = new ol.source.XYZ({
-        url: 'http://127.0.0.1:19797/source/tiles/' + imageInfo.name + '/{z}/{x}_{y}'
+        url: 'http://127.0.0.1:19797/source/tiles/' + imageInfo.name + '/{z}/{x}_{y}',
+        crossOrigin: '',
     });
     var maxZoom = imageInfo.maxLevel;
     var sourceLayer = new ol.layer.Tile({
         source: chartSource,
     });
-    var gridLayer = new ol.layer.Tile({
-        source: new ol.source.TileDebug({
-            projection: 'EPSG:3857',
-            tileGrid: chartSource.getTileGrid()
-        })
+
+    //color-render
+    /**
+     * Color manipulation functions below are adapted from
+     * https://github.com/d3/d3-color.
+     */
+    var Xn = 0.950470;
+    var Yn = 1;
+    var Zn = 1.088830;
+    var t0 = 4 / 29;
+    var t1 = 6 / 29;
+    var t2 = 3 * t1 * t1;
+    var t3 = t1 * t1 * t1;
+    var twoPi = 2 * Math.PI;
+
+
+    /**
+     * Convert an RGB pixel into an HCL pixel.
+     * @param {Array.<number>} pixel A pixel in RGB space.
+     * @return {Array.<number>} A pixel in HCL space.
+     */
+    function rgb2hcl(pixel) {
+        var red = rgb2xyz(pixel[0]);
+        var green = rgb2xyz(pixel[1]);
+        var blue = rgb2xyz(pixel[2]);
+
+        var x = xyz2lab(
+            (0.4124564 * red + 0.3575761 * green + 0.1804375 * blue) / Xn);
+        var y = xyz2lab(
+            (0.2126729 * red + 0.7151522 * green + 0.0721750 * blue) / Yn);
+        var z = xyz2lab(
+            (0.0193339 * red + 0.1191920 * green + 0.9503041 * blue) / Zn);
+
+        var l = 116 * y - 16;
+        var a = 500 * (x - y);
+        var b = 200 * (y - z);
+
+        var c = Math.sqrt(a * a + b * b);
+        var h = Math.atan2(b, a);
+        if (h < 0) {
+            h += twoPi;
+        }
+
+        pixel[0] = h;
+        pixel[1] = c;
+        pixel[2] = l;
+
+        return pixel;
+    }
+
+
+    /**
+     * Convert an HCL pixel into an RGB pixel.
+     * @param {Array.<number>} pixel A pixel in HCL space.
+     * @return {Array.<number>} A pixel in RGB space.
+     */
+    function hcl2rgb(pixel) {
+        var h = pixel[0];
+        var c = pixel[1];
+        var l = pixel[2];
+
+        var a = Math.cos(h) * c;
+        var b = Math.sin(h) * c;
+
+        var y = (l + 16) / 116;
+        var x = isNaN(a) ? y : y + a / 500;
+        var z = isNaN(b) ? y : y - b / 200;
+
+        y = Yn * lab2xyz(y);
+        x = Xn * lab2xyz(x);
+        z = Zn * lab2xyz(z);
+
+        pixel[0] = xyz2rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z);
+        pixel[1] = xyz2rgb(-0.9692660 * x + 1.8760108 * y + 0.0415560 * z);
+        pixel[2] = xyz2rgb(0.0556434 * x - 0.2040259 * y + 1.0572252 * z);
+
+        return pixel;
+    }
+
+    function xyz2lab(t) {
+        return t > t3 ? Math.pow(t, 1 / 3) : t / t2 + t0;
+    }
+
+    function lab2xyz(t) {
+        return t > t1 ? t * t * t : t2 * (t - t0);
+    }
+
+    function rgb2xyz(x) {
+        return (x /= 255) <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+    }
+
+    function xyz2rgb(x) {
+        return 255 * (x <= 0.0031308 ?
+            12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055);
+    }
+
+    var raster = new ol.source.Raster({
+        sources: [chartSource],
+        operation: function (pixels, data) {
+            var hcl = rgb2hcl(pixels[0]);
+
+            var h = hcl[0] + Math.PI * data.hue / 180;
+            if (h < 0) {
+                h += twoPi;
+            } else if (h > twoPi) {
+                h -= twoPi;
+            }
+            hcl[0] = h;
+
+            hcl[1] *= (data.chroma / 100);
+            hcl[2] *= (data.lightness / 100);
+
+            return hcl2rgb(hcl);
+        },
+        lib: {
+            rgb2hcl: rgb2hcl,
+            hcl2rgb: hcl2rgb,
+            rgb2xyz: rgb2xyz,
+            lab2xyz: lab2xyz,
+            xyz2lab: xyz2lab,
+            xyz2rgb: xyz2rgb,
+            Xn: Xn,
+            Yn: Yn,
+            Zn: Zn,
+            t0: t0,
+            t1: t1,
+            t2: t2,
+            t3: t3,
+            twoPi: twoPi
+        }
     });
+    raster.on('beforeoperations', function (event) {
+        var data = event.data;
+        for (var id in controls) {
+            data[id] = Number(controls[id].value);
+        }
+    });
+    //end--color-render
     var map = new ol.Map({
-        layers: [sourceLayer],
+        layers: [new ol.layer.Image({
+            source: raster
+        })],
         target: 'map',
         controls: ol.control.defaults({
             attributionOptions: {
@@ -101,28 +290,19 @@
 
     //area 创建绘制层并将绘制层添加到地图容器中：
     var features = new ol.Collection();
-    //todo:加载区域
-    var areas = [];
 
-    function init() {
-        //todo:get area data from server
-        var coordinates = [[-12797080.109532805, 4022137.926280178], [-11872537.228238024, -7341320.333278604], [-2827558.550325237, 3351899.84376161], [-12797080.109532805, 4022137.926280178]];
-        var polygon_feature = new ol.Feature({
-            id: "example_1",
-            geometry: new ol.geom.Polygon(
-                [coordinates]
-            )
-        });
-        features.push(polygon_feature);
-        coordinates = [[-11642262.32022896, 7854076.6396155], [-15733513.652021743, 184329.08803826757], [-5937912.6073914245, 2316053.900326509], [-11642262.32022896, 7854076.6396155]];
-        var polygon_feature = new ol.Feature({
-            id: "example_2",
-            geometry: new ol.geom.Polygon(
-                [coordinates]
-            )
-        });
-        features.push(polygon_feature);
+    function initAreaFeatures() {
+        areaInfo.forEach(function (area) {
+            var polygon_feature = new ol.Feature({
+                id: area.areaId,
+                geometry: new ol.geom.Polygon(
+                    area.coordinates
+                )
+            });
+            features.push(polygon_feature);
+        })
     }
+
 
     var areaLayerSource = new ol.source.Vector({
         features: features
@@ -149,7 +329,7 @@
 
     //绘画图形：
     var draw;
-    var baseId = imageInfo.name + "_" + userinfo.id + "_";
+    var baseId = imageInfo.name + "_" + userinfo.userId + "_";
 
     function addInteraction() {
         draw = new ol.interaction.Draw({
@@ -188,12 +368,6 @@
             }
         }
     });
-    //        selectCtrl.getFeatures().on('add', function (event) {
-    //            var properties = event.element.getProperties();
-    //            selectedAreaId = properties.id;
-    //            selectedAreaPos = event.element.getGeometry().getCoordinates();
-    //            $('#areaInfoModal').modal();
-    //        });
 
     //保存区域信息
     function saveArea() {
@@ -201,11 +375,14 @@
         var areaInfo = {id: "", content: ""};
         areaInfo.id = selectedAreaId;
         areaInfo.content = $("#area_content").val();
+        console.log("保存区域信息:");
         console.log(areaInfo);
-        //push local varchar
-        //post server api
+        selectCtrl.getFeatures().clear();
+        $('#areaInfoModal').modal('hide');
+        //todo:post server api
     }
 
+    //删除区域信息
     function cancelArea() {
         //remove local varchar
         var features = areaLayerSource.getFeatures();
@@ -216,34 +393,25 @@
             }
         });
         $('#areaInfoModal').modal('hide');
-        //post server api
+        //todo:post server api
     }
 
 
-    //todo:map 亮度 饱和度 对比度
-    if (!ol.has.WEBGL) {
-        alert("not support WEBGL!");
-    }
+    //亮度 饱和度 对比度
+    var controls = {};
+    var controlIds = ['hue', 'chroma', 'lightness'];
+    controlIds.forEach(function (id) {
+        var control = document.getElementById(id);
+        var output = document.getElementById(id + 'Out');
+        control.addEventListener('input', function () {
+            output.innerText = control.value;
+            //change color prop
+            // raster.changed();
+        });
+        output.innerText = control.value;
+        controls[id] = control;
+    });
 
-    function setBrightness() {
-//        console.log(chartSource.getBrightness());
-        chartSource.setProperties(
-            {
-                brightness: 100,
-                contrast: 100,
-            })
-//        sourceLayer.setBrightness(Math.min(sourceLayer.getBrightness() + 0.125, 1));
-    }
-
-    //对比度
-    function setContrast() {
-        sourceLayer.setContrast(Math.min(sourceLayer.getContrast() + 0.125, 1));
-    }
-
-    //饱和度
-    function setSaturation() {
-        sourceLayer.setSaturation(Math.min(sourceLayer.getSaturation() + 0.125, 1));
-    }
 
     //start
     init();
