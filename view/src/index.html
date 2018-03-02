@@ -32,8 +32,12 @@
                 <!-- draw pen -->
                 <a class="btn btn-primary" onclick="addInteraction()">
                     <span class="glyphicon glyphicon-pencil"></span><span>标绘</span></a>
+                <!-- change color -->
+                <a class="btn btn-primary" onclick="showColorControls()">
+                    <span class="glyphicon glyphicon-adjust"></span><span>颜色</span></a>
             </div>
-            <table class="controls">
+
+            <table id="colorControls" class="controls">
                 <tr>
                     <td>hue</td>
                     <td><span id="hueOut"></span>°</td>
@@ -93,15 +97,6 @@
             if (serviceResult.reCode == 1000) {
                 console.log("query area done!");
                 areaInfo = serviceResult.reData;
-                // areaInfo = [{
-                //     areaId: 'area_id_1',
-                //     coordinates: [[-12797080.109532805, 4022137.926280178], [-11872537.228238024, -7341320.333278604], [-2827558.550325237, 3351899.84376161], [-12797080.109532805, 4022137.926280178]]
-                // },
-                //     {
-                //         areaId: 'area_id_2',
-                //         coordinates: [[-11642262.32022896, 7854076.6396155], [-15733513.652021743, 184329.08803826757], [-5937912.6073914245, 2316053.900326509], [-11642262.32022896, 7854076.6396155]]
-                //     }
-                // ];
             } else {
                 console.error(serviceResult);
             }
@@ -281,6 +276,11 @@
         output.innerText = control.value;
         controls[id] = control;
     });
+
+    //
+    function showColorControls() {
+        $('#colorControls').hide();
+    }
 
     //end--color-render
 
