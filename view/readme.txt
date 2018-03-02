@@ -3,7 +3,7 @@ java -jar xxx.jar
 -----
 1.请求图片
 1.1.进入http://127.0.0.1:19797/doc.html
-1.2.点击进入：/source/tiles/handleImage 中的"在线调试标签"
+1.2.点击进入：/source/tiles/handleImage 中的"在线调试"标签
 1.3.输入两个参数，提交后，服务端后台切图
 localFilePath:/Users/dongyan/Downloads/source/thumbnail4.jpg
 baseDir:/Users/dongyan/Downloads/source/tiles

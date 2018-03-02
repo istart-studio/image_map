@@ -7,7 +7,7 @@ package studio.istart.tile.service;
  */
 public class ConfigService {
     /**
-     *
+     * 基础路径
      */
     public static String baseDir;
 }

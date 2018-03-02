@@ -78,22 +78,35 @@
 <script>
     //map
 
-    var userinfo = {};
+    var userInfo = {};
     var imageInfo = {};
     var areaInfo = [];
 
-    //todo:服务器获取 图片基本信息,当前操作用户基本信息,当前用户的区域信息
+    //服务器获取 图片基本信息,当前操作用户基本信息,当前用户的区域信息
     function requestData() {
-        userinfo = {userId: "demo_user_id_1"};
-        areaInfo = [{
-            areaId: 'area_id_1',
-            coordinates: [[-12797080.109532805, 4022137.926280178], [-11872537.228238024, -7341320.333278604], [-2827558.550325237, 3351899.84376161], [-12797080.109532805, 4022137.926280178]]
-        },
-            {
-                areaId: 'area_id_2',
-                coordinates: [[-11642262.32022896, 7854076.6396155], [-15733513.652021743, 184329.08803826757], [-5937912.6073914245, 2316053.900326509], [-11642262.32022896, 7854076.6396155]]
+        userInfo = {userId: "demo_user_id_1"};
+        $.ajax({
+            url: "http://127.0.0.1:19797/area",
+            async: false
+        }).done(function (serviceResult) {
+            console.log(serviceResult);
+            if (serviceResult.reCode == 1000) {
+                console.log("query area done!");
+                areaInfo = serviceResult.reData;
+                // areaInfo = [{
+                //     areaId: 'area_id_1',
+                //     coordinates: [[-12797080.109532805, 4022137.926280178], [-11872537.228238024, -7341320.333278604], [-2827558.550325237, 3351899.84376161], [-12797080.109532805, 4022137.926280178]]
+                // },
+                //     {
+                //         areaId: 'area_id_2',
+                //         coordinates: [[-11642262.32022896, 7854076.6396155], [-15733513.652021743, 184329.08803826757], [-5937912.6073914245, 2316053.900326509], [-11642262.32022896, 7854076.6396155]]
+                //     }
+                // ];
+            } else {
+                console.error(serviceResult);
             }
-        ];
+        });
+
         imageInfo = {maxLevel: 6, name: "thumbnail4"};
     }
 
@@ -104,20 +117,8 @@
         if (!ol.has.WEBGL) {
             alert("not support WEBGL!");
         }
-
-        // var coordinates = [[-12797080.109532805, 4022137.926280178], [-11872537.228238024, -7341320.333278604], [-2827558.550325237, 3351899.84376161], [-12797080.109532805, 4022137.926280178]];
-        // var polygon_feature = new ol.Feature({
-        //     id: "example_1",
-        //     geometry: new ol.geom.Polygon(
-        //         [coordinates]
-        //     )
-        // });
-        // features.push(polygon_feature);
-
-
         // init area data
         initAreaFeatures();
-
     }
 
     var chartSource = new ol.source.XYZ({
@@ -265,7 +266,25 @@
             data[id] = Number(controls[id].value);
         }
     });
+
+    //亮度 饱和度 对比度
+    var controls = {};
+    var controlIds = ['hue', 'chroma', 'lightness'];
+    controlIds.forEach(function (id) {
+        var control = document.getElementById(id);
+        var output = document.getElementById(id + 'Out');
+        control.addEventListener('input', function () {
+            output.innerText = control.value;
+            //change color prop
+            // raster.changed();
+        });
+        output.innerText = control.value;
+        controls[id] = control;
+    });
+
     //end--color-render
+
+    //map
     var map = new ol.Map({
         layers: [new ol.layer.Image({
             source: raster
@@ -284,9 +303,6 @@
             maxZoom: maxZoom,
         })
     });
-
-    //area array
-
 
     //area 创建绘制层并将绘制层添加到地图容器中：
     var features = new ol.Collection();
@@ -329,7 +345,7 @@
 
     //绘画图形：
     var draw;
-    var baseId = imageInfo.name + "_" + userinfo.userId + "_";
+    var baseId = imageInfo.name + "_" + userInfo.userId + "_";
 
     function addInteraction() {
         draw = new ol.interaction.Draw({
@@ -339,6 +355,7 @@
         map.addInteraction(draw);
         draw.on('drawstart', function (event) {
             selectedAreaId = undefined;
+            selectedAreaPos = undefined;
         })
         draw.on('drawend', function (event) {//绘画完成触发时间
             event.feature.setProperties({//id等基本属性
@@ -364,6 +381,11 @@
             console.log(selectedAreaId);
             if (selectedAreaId) {
                 selectedAreaPos = selectedArea.getGeometry().getCoordinates();
+                areaInfo.forEach(function (area) {
+                    if (area.areaId == selectedAreaId) {
+                        $("#area_content").val(area.content);
+                    }
+                })
                 $('#areaInfoModal').modal();
             }
         }
@@ -371,46 +393,59 @@
 
     //保存区域信息
     function saveArea() {
-        console.log("提交区域信息:")
-        var areaInfo = {id: "", content: ""};
-        areaInfo.id = selectedAreaId;
+
+        var areaInfo = {areaId: "", content: "", coordinates: []};
+        areaInfo.areaId = selectedAreaId;
         areaInfo.content = $("#area_content").val();
+        areaInfo.coordinates = selectedAreaPos;
         console.log("保存区域信息:");
         console.log(areaInfo);
+
+        //post server api
+        console.log("提交区域信息:")
+        $.ajax({
+            url: "http://127.0.0.1:19797/area/save",
+            data: JSON.stringify(areaInfo),
+            method: "POST",
+            contentType: 'application/json',
+            dataType: 'json',
+        }).done(function (serviceResult) {
+            console.log(serviceResult);
+            if (serviceResult.reCode == 1000) {
+                console.log("add area done!");
+            } else {
+                console.error(serviceResult);
+            }
+        });
+
         selectCtrl.getFeatures().clear();
         $('#areaInfoModal').modal('hide');
-        //todo:post server api
     }
 
     //删除区域信息
     function cancelArea() {
-        //remove local varchar
         var features = areaLayerSource.getFeatures();
         features.forEach(function (feature) {
             if (feature.get('id') === selectedAreaId) {
+                //remove local varchar
                 selectCtrl.getFeatures().clear();
                 areaLayerSource.removeFeature(feature);
+                //post server api
+                $.ajax({
+                    url: "http://127.0.0.1:19797/area/del?areaId=" + selectedAreaId,
+                    method: "GET"
+                }).done(function (serviceResult) {
+                    console.log(serviceResult);
+                    if (serviceResult.reCode == 1000) {
+                        console.log("del area done!");
+                    } else {
+                        console.error(serviceResult);
+                    }
+                });
             }
         });
         $('#areaInfoModal').modal('hide');
-        //todo:post server api
     }
-
-
-    //亮度 饱和度 对比度
-    var controls = {};
-    var controlIds = ['hue', 'chroma', 'lightness'];
-    controlIds.forEach(function (id) {
-        var control = document.getElementById(id);
-        var output = document.getElementById(id + 'Out');
-        control.addEventListener('input', function () {
-            output.innerText = control.value;
-            //change color prop
-            // raster.changed();
-        });
-        output.innerText = control.value;
-        controls[id] = control;
-    });
 
 
     //start

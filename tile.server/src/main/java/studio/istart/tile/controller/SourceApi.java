@@ -4,12 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import studio.istart.framework.service.BaseServiceResult;
 import studio.istart.framework.service.ResultTypeEnum;
 import studio.istart.tile.component.ImageLoader;
-import studio.istart.tile.constants.DirConstants;
 import studio.istart.tile.model.ZoomLevel;
 import studio.istart.tile.service.ConfigService;
 
@@ -29,12 +27,13 @@ import java.nio.file.Paths;
 @Log4j2
 @RestController
 @RequestMapping("/source")
-public class SourceController {
+public class SourceApi {
 
     /**
      * 处理图片，（切图）
+     *
      * @param localFilePath 文件的本地地址
-     * @param baseDir 要切图的根目录
+     * @param baseDir       要切图的根目录
      * @return
      * @throws Exception
      */
@@ -54,7 +53,7 @@ public class SourceController {
         File sourceFile = new File(localFilePath);
         if (!sourceFile.exists()) {
             return BaseServiceResult.builder()
-                    .build(ResultTypeEnum.FILE_IS_NOT_FOUND, "", "图片不存在");
+                .build(ResultTypeEnum.FILE_IS_NOT_FOUND, "", "图片不存在");
         }
         ImageLoader imageLoader = ImageLoader.builder(sourceFile);
         new Thread(() -> {
@@ -66,9 +65,9 @@ public class SourceController {
         }).start();
 
         return BaseServiceResult.builder()
-                .build(ResultTypeEnum.SUCCESS,
-                        new ImageInfo(imageLoader.getName(), imageLoader.getMaxZoomLevel()),
-                        "图片正在处理，请查看服务器日志");
+            .build(ResultTypeEnum.SUCCESS,
+                new ImageInfo(imageLoader.getName(), imageLoader.getMaxZoomLevel()),
+                "图片正在处理，请查看服务器日志");
     }
 
     /**
