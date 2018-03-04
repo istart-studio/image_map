@@ -30,14 +30,29 @@
         <div class="panel-heading">
             <div class="btn-group" role="group" aria-label="...">
                 <!-- draw pen -->
-                <a class="btn btn-primary" onclick="addInteraction()">
+                <a class="btn btn-primary" onclick="startDraw()">
                     <span class="glyphicon glyphicon-pencil"></span><span>标绘</span></a>
                 <!-- change color -->
                 <a class="btn btn-primary" onclick="showColorControls()">
                     <span class="glyphicon glyphicon-adjust"></span><span>颜色</span></a>
+                <!-- export map -->
+                <a class="btn btn-primary" onclick="exportMap()">
+                    <span class="glyphicon glyphicon-adjust"></span><span>上传当前图像</span></a>
+
+            </div>
+            <div id="drawControl" class="controls">
+                <label>绘制方式 &nbsp; 点击开始，双击结束</label>
+                <select id="type" onchange="addInteraction()">
+                    <option value="Polygon">自定义形状</option>
+                    <option value="Point">点</option>
+                    <option value="LineString">线</option>
+                    <option value="Circle">圆</option>
+                    <option value="Square">正方形</option>
+                    <option value="Box">矩形</option>
+                </select>
             </div>
 
-            <table id="colorControls" class="controls">
+            <table id="colorControl" class="controls">
                 <tr>
                     <td>hue</td>
                     <td><span id="hueOut"></span>°</td>
@@ -54,6 +69,11 @@
                     <td><input id="lightness" type="range" min="0" max="100" value="100"/></td>
                 </tr>
             </table>
+        </div>
+
+        <div id="exportMapControl" class="controls">
+            <span>正在上传快照...，如下图所示</span>
+            <img id="mapImage">
         </div>
         <div class="panel-body">
             <div id="map" class="map">
@@ -110,10 +130,15 @@
 
     function init() {
         if (!ol.has.WEBGL) {
-            alert("not support WEBGL!");
+            alert("your browser not support WEBGL!");
         }
+        hideAllControls();
         // init area data
         initAreaFeatures();
+    }
+
+    function hideAllControls() {
+        $('.controls').hide();
     }
 
     var chartSource = new ol.source.XYZ({
@@ -121,9 +146,6 @@
         crossOrigin: '',
     });
     var maxZoom = imageInfo.maxLevel;
-    var sourceLayer = new ol.layer.Tile({
-        source: chartSource,
-    });
 
     //color-render
     /**
@@ -279,7 +301,8 @@
 
     //
     function showColorControls() {
-        $('#colorControls').hide();
+        hideAllControls();
+        $('#colorControl').show();
     }
 
     //end--color-render
@@ -347,10 +370,28 @@
     var draw;
     var baseId = imageInfo.name + "_" + userInfo.userId + "_";
 
+    var typeSelect = document.getElementById('type');
+
+    function startDraw() {
+        hideAllControls();
+        $('#drawControl').show();
+        addInteraction();
+    }
+
     function addInteraction() {
+        var value = typeSelect.value;
+        var geometryFunction;
+        if (value === 'Square') {
+            value = 'Circle';
+            geometryFunction = ol.interaction.Draw.createRegularPolygon(4);
+        } else if (value === 'Box') {
+            value = 'Circle';
+            geometryFunction = ol.interaction.Draw.createBox();
+        }
         draw = new ol.interaction.Draw({
             features: features,
-            type: "Polygon",
+            type: value,
+            geometryFunction: geometryFunction,
         });
         map.addInteraction(draw);
         draw.on('drawstart', function (event) {
@@ -447,6 +488,58 @@
         $('#areaInfoModal').modal('hide');
     }
 
+    //export map
+    function exportMap() {
+        hideAllControls();
+        map.once('postcompose', function (event) {
+//            var canvas = event.context.canvas;
+//            if (navigator.msSaveBlob) {
+//                navigator.msSaveBlob(canvas.msToBlob(), 'map.png');
+//            } else {
+//                canvas.toBlob(function (blob) {
+//                    saveAs(blob, 'map.png');
+//                });
+//            }
+            var dataURL;
+            var canvas = event.context.canvas;
+            if (ol.has.DEVICE_PIXEL_RATIO == 1) {
+                dataURL = canvas.toDataURL('image/png');
+            } else {
+                var targetCanvas = document.createElement('canvas');
+                var size = map.getSize();
+                targetCanvas.width = size[0];
+                targetCanvas.height = size[1];
+                targetCanvas.getContext('2d').drawImage(canvas,
+                    0, 0, canvas.width, canvas.height,
+                    0, 0, targetCanvas.width, targetCanvas.height);
+                dataURL = targetCanvas.toDataURL('image/png');
+            }
+            console.log(dataURL);
+            $('#exportMapControl').show();
+            $('#mapImage').attr('src', dataURL);
+
+            //post server api
+            console.log("提交图片快照:");
+            var imageName = userInfo.userId + "_" + new Date().getTime() + "_SNAPSHOT";
+            var imageType = "PNG";
+            var imageSnapshot = {imageName: imageName, imageType: imageType, imageBase64: dataURL};
+            $.ajax({
+                url: "http://127.0.0.1:19797/snapshot/upload",
+                data: JSON.stringify(imageSnapshot),
+                method: "POST",
+                contentType: 'application/json',
+                dataType: 'json',
+            }).done(function (serviceResult) {
+                console.log(serviceResult);
+                if (serviceResult.reCode == 1000) {
+                    alert("upload done!");
+                } else {
+                    console.error(serviceResult);
+                }
+            });
+        });
+        map.renderSync();
+    }
 
     //start
     init();

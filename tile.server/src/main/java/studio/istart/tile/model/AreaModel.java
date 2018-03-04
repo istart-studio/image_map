@@ -29,4 +29,6 @@ public class AreaModel {
      * 标记内容
      */
     private String content;
+
+    
 }
