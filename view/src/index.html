@@ -44,7 +44,7 @@
                     <span class="glyphicon glyphicon-adjust"></span><span>颜色</span></a>
                 <!-- export map -->
                 <a class="btn btn-primary" onclick="exportMap()">
-                    <span class="glyphicon glyphicon-adjust"></span><span>上传当前图像</span></a>
+                    <span class="glyphicon glyphicon-upload"></span><span>上传当前图像</span></a>
 
             </div>
             <div id="drawControl" class="controls">
@@ -79,14 +79,32 @@
         </div>
 
         <div id="exportMapControl" class="controls">
-            <span>正在上传快照...，如下图所示</span>
-            <img id="mapImage">
         </div>
         <div class="panel-body">
             <div id="map" class="map" style="height: 70vh;"></div>
         </div>
     </div>
     <!-- modal -->
+    <div id='exportMapModal' class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog"
+         aria-labelledby="mySmallModalLabel">
+        <div class="modal-dialog modal-sm" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">截图上传中</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>正在上传快照...，如下图所示</label>
+                        <img style="width:40vh;height:40vh;" id="mapImage">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id='areaInfoModal' class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog"
          aria-labelledby="mySmallModalLabel">
         <div class="modal-dialog modal-sm" role="document">
@@ -521,7 +539,7 @@
                 dataURL = targetCanvas.toDataURL('image/png');
             }
             console.log(dataURL);
-            $('#exportMapControl').show();
+            $('#exportMapModal').modal();
             $('#mapImage').attr('src', dataURL);
 
             //post server api
