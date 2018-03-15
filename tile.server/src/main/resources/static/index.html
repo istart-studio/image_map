@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Canvas Tiles</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport"
+          content="width=device-width,height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+    <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link href="https://cdn.bootcss.com/openlayers/4.6.4/ol-debug.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/openlayers/4.6.4/ol-debug.js"></script>
+    <!--<link href="https://cdn.bootcss.com/openlayers/3.20.1/ol.css" rel="stylesheet">-->
+    <!--<script src="https://cdn.bootcss.com/openlayers/3.20.1/ol.js"></script>-->
+    <!--<link href="https://cdn.bootcss.com/openlayers/3.8.2/ol-debug.css" rel="stylesheet">-->
+    <!--<script src="https://cdn.bootcss.com/openlayers/3.8.2/ol-debug.js"></script>-->
+    <style>
+        body {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+
+        .fill {
+            min-height: 100%;
+            height: 100%;
+        }
+
+        .map {
+            border-radius: 6px;
+            border-width: 1px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="panel panel-default" style="height:90vh;">
+        <div class="panel-heading">
+            <div class="btn-group" role="group" aria-label="...">
+                <!-- draw pen -->
+                <a class="btn btn-primary" onclick="startDraw()">
+                    <span class="glyphicon glyphicon-pencil"></span><span>标绘</span></a>
+                <!-- change color -->
+                <a class="btn btn-primary" onclick="showColorControls()">
+                    <span class="glyphicon glyphicon-adjust"></span><span>颜色</span></a>
+                <!-- export map -->
+                <a class="btn btn-primary" onclick="exportMap()">
+                    <span class="glyphicon glyphicon-upload"></span><span>上传当前图像</span></a>
+
+            </div>
+            <div id="drawControl" class="controls">
+                <label>绘制方式 &nbsp; 点击开始，双击结束</label>
+                <select id="type" onchange="addInteraction()">
+                    <option value="Polygon">自定义形状</option>
+                    <option value="Point">点</option>
+                    <option value="LineString">线</option>
+                    <option value="Circle">圆</option>
+                    <option value="Square">正方形</option>
+                    <option value="Box">矩形</option>
+                </select>
+            </div>
+
+            <table id="colorControl" class="controls">
+                <tr>
+                    <td>hue</td>
+                    <td><span id="hueOut"></span>°</td>
+                    <td><input id="hue" type="range" min="-180" max="180" value="0"/></td>
+                </tr>
+                <tr>
+                    <td>chroma</td>
+                    <td><span id="chromaOut"></span> %</td>
+                    <td><input id="chroma" type="range" min="0" max="100" value="100"/></td>
+                </tr>
+                <tr>
+                    <td>lightness</td>
+                    <td><span id="lightnessOut"></span> %</td>
+                    <td><input id="lightness" type="range" min="0" max="100" value="100"/></td>
+                </tr>
+            </table>
+        </div>
+
+        <div id="exportMapControl" class="controls">
+        </div>
+        <div class="panel-body">
+            <div id="map" class="map" style="height: 70vh;"></div>
+        </div>
+    </div>
+    <!-- modal -->
+    <div id='exportMapModal' class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog"
+         aria-labelledby="mySmallModalLabel">
+        <div class="modal-dialog modal-sm" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">截图上传中</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>正在上传快照...，如下图所示</label>
+                        <img style="width:40vh;height:40vh;" id="mapImage">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id='areaInfoModal' class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog"
+         aria-labelledby="mySmallModalLabel">
+        <div class="modal-dialog modal-sm" role="document">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>内容</label>
+                        <textarea id="area_content" class="form-control" placeholder="内容"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" onclick="cancelArea()">删除</button>
+                    <button type="button" class="btn btn-primary" onclick="saveArea()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    //map
+
+    var api_host = "";//http://127.0.0.1:19797
+    var userInfo = {};
+    var imageInfo = {};
+    var areaInfo = [];
+
+    //服务器获取 图片基本信息,当前操作用户基本信息,当前用户的区域信息
+    function requestData() {
+        userInfo = {userId: "demo_user_id_1"};
+        $.ajax({
+            url: api_host + "/area",
+            async: false
+        }).done(function (serviceResult) {
+            console.log(serviceResult);
+            if (serviceResult.reCode == 1000) {
+                console.log("query area done!");
+                areaInfo = serviceResult.reData;
+            } else {
+                console.error(serviceResult);
+            }
+        });
+
+        imageInfo = {maxLevel: 6, name: "thumbnail4"};
+    }
+
+    //request data form server
+    requestData();
+
+    function init() {
+        if (!ol.has.WEBGL) {
+            alert("your browser not support WEBGL!");
+        }
+        hideAllControls();
+        // init area data
+        initAreaFeatures();
+    }
+
+    function hideAllControls() {
+        $('.controls').hide();
+    }
+
+    var chartSource = new ol.source.XYZ({
+        url: api_host + '/source/tiles/' + imageInfo.name + '/{z}/{x}_{y}',
+        crossOrigin: '',
+    });
+    var maxZoom = imageInfo.maxLevel;
+
+    //color-render
+    /**
+     * Color manipulation functions below are adapted from
+     * https://github.com/d3/d3-color.
+     */
+    var Xn = 0.950470;
+    var Yn = 1;
+    var Zn = 1.088830;
+    var t0 = 4 / 29;
+    var t1 = 6 / 29;
+    var t2 = 3 * t1 * t1;
+    var t3 = t1 * t1 * t1;
+    var twoPi = 2 * Math.PI;
+
+
+    /**
+     * Convert an RGB pixel into an HCL pixel.
+     * @param {Array.<number>} pixel A pixel in RGB space.
+     * @return {Array.<number>} A pixel in HCL space.
+     */
+    function rgb2hcl(pixel) {
+        var red = rgb2xyz(pixel[0]);
+        var green = rgb2xyz(pixel[1]);
+        var blue = rgb2xyz(pixel[2]);
+
+        var x = xyz2lab(
+            (0.4124564 * red + 0.3575761 * green + 0.1804375 * blue) / Xn);
+        var y = xyz2lab(
+            (0.2126729 * red + 0.7151522 * green + 0.0721750 * blue) / Yn);
+        var z = xyz2lab(
+            (0.0193339 * red + 0.1191920 * green + 0.9503041 * blue) / Zn);
+
+        var l = 116 * y - 16;
+        var a = 500 * (x - y);
+        var b = 200 * (y - z);
+
+        var c = Math.sqrt(a * a + b * b);
+        var h = Math.atan2(b, a);
+        if (h < 0) {
+            h += twoPi;
+        }
+
+        pixel[0] = h;
+        pixel[1] = c;
+        pixel[2] = l;
+
+        return pixel;
+    }
+
+
+    /**
+     * Convert an HCL pixel into an RGB pixel.
+     * @param {Array.<number>} pixel A pixel in HCL space.
+     * @return {Array.<number>} A pixel in RGB space.
+     */
+    function hcl2rgb(pixel) {
+        var h = pixel[0];
+        var c = pixel[1];
+        var l = pixel[2];
+
+        var a = Math.cos(h) * c;
+        var b = Math.sin(h) * c;
+
+        var y = (l + 16) / 116;
+        var x = isNaN(a) ? y : y + a / 500;
+        var z = isNaN(b) ? y : y - b / 200;
+
+        y = Yn * lab2xyz(y);
+        x = Xn * lab2xyz(x);
+        z = Zn * lab2xyz(z);
+
+        pixel[0] = xyz2rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z);
+        pixel[1] = xyz2rgb(-0.9692660 * x + 1.8760108 * y + 0.0415560 * z);
+        pixel[2] = xyz2rgb(0.0556434 * x - 0.2040259 * y + 1.0572252 * z);
+
+        return pixel;
+    }
+
+    function xyz2lab(t) {
+        return t > t3 ? Math.pow(t, 1 / 3) : t / t2 + t0;
+    }
+
+    function lab2xyz(t) {
+        return t > t1 ? t * t * t : t2 * (t - t0);
+    }
+
+    function rgb2xyz(x) {
+        return (x /= 255) <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+    }
+
+    function xyz2rgb(x) {
+        return 255 * (x <= 0.0031308 ?
+            12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055);
+    }
+
+    var raster = new ol.source.Raster({
+        sources: [chartSource],
+        operation: function (pixels, data) {
+            var hcl = rgb2hcl(pixels[0]);
+
+            var h = hcl[0] + Math.PI * data.hue / 180;
+            if (h < 0) {
+                h += twoPi;
+            } else if (h > twoPi) {
+                h -= twoPi;
+            }
+            hcl[0] = h;
+
+            hcl[1] *= (data.chroma / 100);
+            hcl[2] *= (data.lightness / 100);
+
+            return hcl2rgb(hcl);
+        },
+        lib: {
+            rgb2hcl: rgb2hcl,
+            hcl2rgb: hcl2rgb,
+            rgb2xyz: rgb2xyz,
+            lab2xyz: lab2xyz,
+            xyz2lab: xyz2lab,
+            xyz2rgb: xyz2rgb,
+            Xn: Xn,
+            Yn: Yn,
+            Zn: Zn,
+            t0: t0,
+            t1: t1,
+            t2: t2,
+            t3: t3,
+            twoPi: twoPi
+        }
+    });
+    raster.on('beforeoperations', function (event) {
+        var data = event.data;
+        for (var id in controls) {
+            data[id] = Number(controls[id].value);
+        }
+    });
+
+    //亮度 饱和度 对比度
+    var controls = {};
+    var controlIds = ['hue', 'chroma', 'lightness'];
+    controlIds.forEach(function (id) {
+        var control = document.getElementById(id);
+        var output = document.getElementById(id + 'Out');
+        control.addEventListener('input', function () {
+            output.innerText = control.value;
+            //change color prop
+            // raster.changed();
+        });
+        output.innerText = control.value;
+        controls[id] = control;
+    });
+
+    //
+    function showColorControls() {
+        hideAllControls();
+        $('#colorControl').show();
+    }
+
+    //end--color-render
+
+    //map
+    var map = new ol.Map({
+        layers: [new ol.layer.Image({
+            source: raster
+        })],
+        target: 'map',
+        controls: ol.control.defaults({
+            attributionOptions: {
+                collapsible: false
+            }
+        }),
+        view: new ol.View({
+            center: ol.proj.transform(
+                [0, 0], 'EPSG:4326', 'EPSG:3857'),
+            zoom: 1,
+            minZoom: 1,
+            maxZoom: maxZoom,
+        })
+    });
+
+    //area 创建绘制层并将绘制层添加到地图容器中：
+    var features = new ol.Collection();
+
+    function initAreaFeatures() {
+        areaInfo.forEach(function (area) {
+            var polygon_feature = new ol.Feature({
+                id: area.areaId,
+                geometry: new ol.geom.Polygon(
+                    area.coordinates
+                )
+            });
+            features.push(polygon_feature);
+        })
+    }
+
+
+    var areaLayerSource = new ol.source.Vector({
+        features: features
+    });
+    var areaLayer = new ol.layer.Vector({
+        source: areaLayerSource,
+        style: new ol.style.Style({
+            fill: new ol.style.Fill({
+                color: 'rgba(255,255,255,0.3)'
+            }),
+            stroke: new ol.style.Stroke({
+                color: '#ffcc33',
+                width: 1
+            }),
+            image: new ol.style.Circle({
+                radius: 7,
+                fill: new ol.style.Fill({
+                    color: '#ffcc33'
+                }),
+            }),
+        }),
+    });
+    areaLayer.setMap(map);//将绘制层添加到地图容器中
+
+    //绘画图形：
+    var draw;
+    var baseId = imageInfo.name + "_" + userInfo.userId + "_";
+
+    var typeSelect = document.getElementById('type');
+
+    function startDraw() {
+        hideAllControls();
+        $('#drawControl').show();
+        addInteraction();
+    }
+
+    function addInteraction() {
+        var value = typeSelect.value;
+        var geometryFunction;
+        if (value === 'Square') {
+            value = 'Circle';
+            geometryFunction = ol.interaction.Draw.createRegularPolygon(4);
+        } else if (value === 'Box') {
+            value = 'Circle';
+            geometryFunction = ol.interaction.Draw.createBox();
+        }
+        draw = new ol.interaction.Draw({
+            features: features,
+            type: value,
+            geometryFunction: geometryFunction,
+        });
+        map.addInteraction(draw);
+        draw.on('drawstart', function (event) {
+            selectedAreaId = undefined;
+            selectedAreaPos = undefined;
+        })
+        draw.on('drawend', function (event) {//绘画完成触发时间
+            event.feature.setProperties({//id等基本属性
+                'id': baseId + new Date().getTime(),
+            });
+            map.removeInteraction(draw);//移除绘画互动
+        });
+    }
+
+
+    //选取区域
+    var selectedAreaId;
+    var selectedAreaPos;
+    var selectCtrl = new ol.interaction.Select();
+    map.addInteraction(selectCtrl);
+    selectCtrl.on('select', function (e) {
+        console.log("select features length:" + e.target.getFeatures().getLength());
+        //层叠 选择第一个区域
+        var selectedArea = e.selected[0];
+        console.log(selectedArea);
+        if (selectedArea) {
+            selectedAreaId = selectedArea.get('id');
+            console.log(selectedAreaId);
+            if (selectedAreaId) {
+                selectedAreaPos = selectedArea.getGeometry().getCoordinates();
+                areaInfo.forEach(function (area) {
+                    if (area.areaId == selectedAreaId) {
+                        $("#area_content").val(area.content);
+                    }
+                })
+                $('#areaInfoModal').modal();
+            }
+        }
+    });
+
+    //保存区域信息
+    function saveArea() {
+
+        var areaInfo = {areaId: "", content: "", coordinates: []};
+        areaInfo.areaId = selectedAreaId;
+        areaInfo.content = $("#area_content").val();
+        areaInfo.coordinates = selectedAreaPos;
+        console.log("保存区域信息:");
+        console.log(areaInfo);
+
+        //post server api
+        console.log("提交区域信息:")
+        $.ajax({
+            url: api_host + "/area/save",
+            data: JSON.stringify(areaInfo),
+            method: "POST",
+            contentType: 'application/json',
+            dataType: 'json',
+        }).done(function (serviceResult) {
+            console.log(serviceResult);
+            if (serviceResult.reCode == 1000) {
+                console.log("add area done!");
+            } else {
+                console.error(serviceResult);
+            }
+        });
+
+        selectCtrl.getFeatures().clear();
+        $('#areaInfoModal').modal('hide');
+    }
+
+    //删除区域信息
+    function cancelArea() {
+        var features = areaLayerSource.getFeatures();
+        features.forEach(function (feature) {
+            if (feature.get('id') === selectedAreaId) {
+                //remove local varchar
+                selectCtrl.getFeatures().clear();
+                areaLayerSource.removeFeature(feature);
+                //post server api
+                $.ajax({
+                    url: api_host + "/area/del?areaId=" + selectedAreaId,
+                    method: "GET"
+                }).done(function (serviceResult) {
+                    console.log(serviceResult);
+                    if (serviceResult.reCode == 1000) {
+                        console.log("del area done!");
+                    } else {
+                        console.error(serviceResult);
+                    }
+                });
+            }
+        });
+        $('#areaInfoModal').modal('hide');
+    }
+
+    //export map
+    function exportMap() {
+        hideAllControls();
+        map.once('postcompose', function (event) {
+//            var canvas = event.context.canvas;
+//            if (navigator.msSaveBlob) {
+//                navigator.msSaveBlob(canvas.msToBlob(), 'map.png');
+//            } else {
+//                canvas.toBlob(function (blob) {
+//                    saveAs(blob, 'map.png');
+//                });
+//            }
+            var dataURL;
+            var canvas = event.context.canvas;
+            if (ol.has.DEVICE_PIXEL_RATIO == 1) {
+                dataURL = canvas.toDataURL('image/png');
+            } else {
+                var targetCanvas = document.createElement('canvas');
+                var size = map.getSize();
+                targetCanvas.width = size[0];
+                targetCanvas.height = size[1];
+                targetCanvas.getContext('2d').drawImage(canvas,
+                    0, 0, canvas.width, canvas.height,
+                    0, 0, targetCanvas.width, targetCanvas.height);
+                dataURL = targetCanvas.toDataURL('image/png');
+            }
+            console.log(dataURL);
+            $('#exportMapModal').modal();
+            $('#mapImage').attr('src', dataURL);
+
+            //post server api
+            console.log("提交图片快照:");
+            var imageName = userInfo.userId + "_" + new Date().getTime() + "_SNAPSHOT";
+            var imageType = "PNG";
+            var imageSnapshot = {imageName: imageName, imageType: imageType, imageBase64: dataURL};
+            $.ajax({
+                url: api_host + "/snapshot/upload",
+                data: JSON.stringify(imageSnapshot),
+                method: "POST",
+                contentType: 'application/json',
+                dataType: 'json',
+            }).done(function (serviceResult) {
+                console.log(serviceResult);
+                if (serviceResult.reCode == 1000) {
+                    alert("upload done!");
+                } else {
+                    console.error(serviceResult);
+                }
+            });
+        });
+        map.renderSync();
+    }
+
+    //start
+    init();
+
+</script>
+</body>
+</html>

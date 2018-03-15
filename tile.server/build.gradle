@@ -54,6 +54,7 @@ dependencies {
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-log4j2', version: springBootVersion
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: springBootVersion
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator', version: springBootVersion
+//    compile group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version: springBootVersion
 
     //the IDE plugin "lombok" should be install,java9 with 1.16.19+ will be fine.
     compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.16.18'
