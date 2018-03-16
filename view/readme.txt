@@ -12,4 +12,4 @@ eg: http://127.0.0.1:19797/source/tiles/handleImage?localFilePath=%2FUsers%2Fdon
 1.5.等待切片完成，提示"zoom level 1 cut done!"
 查看对应的瓦片本地文件夹是否存在为1的文件夹
 
-2.chrome打开index.html
+2.chrome打开http://127.0.0.1:19797/index

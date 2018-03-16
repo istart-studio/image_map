@@ -354,22 +354,12 @@
     });
 
     //area 创建绘制层并将绘制层添加到地图容器中：
+
+
+
     var features = new ol.Collection();
-
-    function initAreaFeatures() {
-        areaInfo.forEach(function (area) {
-            var polygon_feature = new ol.Feature({
-                id: area.areaId,
-                geometry: new ol.geom.Polygon(
-                    area.coordinates
-                )
-            });
-            features.push(polygon_feature);
-        })
-    }
-
-
     var areaLayerSource = new ol.source.Vector({
+        wrapX: false,
         features: features
     });
     var areaLayer = new ol.layer.Vector({
@@ -391,6 +381,17 @@
         }),
     });
     areaLayer.setMap(map);//将绘制层添加到地图容器中
+    function initAreaFeatures() {
+        areaInfo.forEach(function (area) {
+            var polygon_feature = new ol.Feature({
+                id: area.areaId,
+                geometry: new ol.geom.Polygon(
+                    area.coordinates
+                )
+            });
+            features.push(polygon_feature);
+        })
+    }
 
     //绘画图形：
     var draw;
@@ -404,6 +405,26 @@
         addInteraction();
     }
 
+    //Setup drawend event handle function
+    function onFinishSelection(evt) {
+        //Call to double click zoom control function to deactivate zoom event
+        controlDoubleClickZoom(false);
+        //Delay execution of activation of double click zoom function
+        setTimeout(function(){controlDoubleClickZoom(true);},251);
+    }
+
+    //Control active state of double click zoom interaction
+    function controlDoubleClickZoom(active){
+        //Find double click interaction
+        var interactions = map.getInteractions();
+        for (var i = 0; i < interactions.getLength(); i++) {
+            var interaction = interactions.item(i);
+            if (interaction instanceof ol.interaction.DoubleClickZoom) {
+                interaction.setActive(active);
+            }
+        }
+    }
+
     function addInteraction() {
         var value = typeSelect.value;
         var geometryFunction;
@@ -415,7 +436,8 @@
             geometryFunction = ol.interaction.Draw.createBox();
         }
         draw = new ol.interaction.Draw({
-            features: features,
+            source: areaLayerSource,
+            // features: features,
             type: value,
             geometryFunction: geometryFunction,
         });
@@ -428,9 +450,12 @@
             event.feature.setProperties({//id等基本属性
                 'id': baseId + new Date().getTime(),
             });
+            onFinishSelection(event);
             map.removeInteraction(draw);//移除绘画互动
         });
     }
+
+
 
 
     //选取区域

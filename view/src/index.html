@@ -90,7 +90,8 @@
         <div class="modal-dialog modal-sm" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
                     <h4 class="modal-title" id="myModalLabel">截图上传中</h4>
                 </div>
                 <div class="modal-body">
@@ -126,6 +127,7 @@
 <script>
     //map
 
+    var api_host = "http://127.0.0.1:19797";//http://127.0.0.1:19797
     var userInfo = {};
     var imageInfo = {};
     var areaInfo = [];
@@ -134,7 +136,7 @@
     function requestData() {
         userInfo = {userId: "demo_user_id_1"};
         $.ajax({
-            url: "http://127.0.0.1:19797/area",
+            url: api_host + "/area",
             async: false
         }).done(function (serviceResult) {
             console.log(serviceResult);
@@ -166,7 +168,7 @@
     }
 
     var chartSource = new ol.source.XYZ({
-        url: 'http://127.0.0.1:19797/source/tiles/' + imageInfo.name + '/{z}/{x}_{y}',
+        url: api_host + '/source/tiles/' + imageInfo.name + '/{z}/{x}_{y}',
         crossOrigin: '',
     });
     var maxZoom = imageInfo.maxLevel;
@@ -352,22 +354,12 @@
     });
 
     //area 创建绘制层并将绘制层添加到地图容器中：
+
+
+
     var features = new ol.Collection();
-
-    function initAreaFeatures() {
-        areaInfo.forEach(function (area) {
-            var polygon_feature = new ol.Feature({
-                id: area.areaId,
-                geometry: new ol.geom.Polygon(
-                    area.coordinates
-                )
-            });
-            features.push(polygon_feature);
-        })
-    }
-
-
     var areaLayerSource = new ol.source.Vector({
+        wrapX: false,
         features: features
     });
     var areaLayer = new ol.layer.Vector({
@@ -389,6 +381,17 @@
         }),
     });
     areaLayer.setMap(map);//将绘制层添加到地图容器中
+    function initAreaFeatures() {
+        areaInfo.forEach(function (area) {
+            var polygon_feature = new ol.Feature({
+                id: area.areaId,
+                geometry: new ol.geom.Polygon(
+                    area.coordinates
+                )
+            });
+            features.push(polygon_feature);
+        })
+    }
 
     //绘画图形：
     var draw;
@@ -402,6 +405,26 @@
         addInteraction();
     }
 
+    //Setup drawend event handle function
+    function onFinishSelection(evt) {
+        //Call to double click zoom control function to deactivate zoom event
+        controlDoubleClickZoom(false);
+        //Delay execution of activation of double click zoom function
+        setTimeout(function(){controlDoubleClickZoom(true);},251);
+    }
+
+    //Control active state of double click zoom interaction
+    function controlDoubleClickZoom(active){
+        //Find double click interaction
+        var interactions = map.getInteractions();
+        for (var i = 0; i < interactions.getLength(); i++) {
+            var interaction = interactions.item(i);
+            if (interaction instanceof ol.interaction.DoubleClickZoom) {
+                interaction.setActive(active);
+            }
+        }
+    }
+
     function addInteraction() {
         var value = typeSelect.value;
         var geometryFunction;
@@ -413,7 +436,8 @@
             geometryFunction = ol.interaction.Draw.createBox();
         }
         draw = new ol.interaction.Draw({
-            features: features,
+            source: areaLayerSource,
+            // features: features,
             type: value,
             geometryFunction: geometryFunction,
         });
@@ -426,9 +450,12 @@
             event.feature.setProperties({//id等基本属性
                 'id': baseId + new Date().getTime(),
             });
+            onFinishSelection(event);
             map.removeInteraction(draw);//移除绘画互动
         });
     }
+
+
 
 
     //选取区域
@@ -469,7 +496,7 @@
         //post server api
         console.log("提交区域信息:")
         $.ajax({
-            url: "http://127.0.0.1:19797/area/save",
+            url: api_host + "/area/save",
             data: JSON.stringify(areaInfo),
             method: "POST",
             contentType: 'application/json',
@@ -497,7 +524,7 @@
                 areaLayerSource.removeFeature(feature);
                 //post server api
                 $.ajax({
-                    url: "http://127.0.0.1:19797/area/del?areaId=" + selectedAreaId,
+                    url: api_host + "/area/del?areaId=" + selectedAreaId,
                     method: "GET"
                 }).done(function (serviceResult) {
                     console.log(serviceResult);
@@ -548,7 +575,7 @@
             var imageType = "PNG";
             var imageSnapshot = {imageName: imageName, imageType: imageType, imageBase64: dataURL};
             $.ajax({
-                url: "http://127.0.0.1:19797/snapshot/upload",
+                url: api_host + "/snapshot/upload",
                 data: JSON.stringify(imageSnapshot),
                 method: "POST",
                 contentType: 'application/json',
