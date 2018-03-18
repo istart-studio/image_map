@@ -10,6 +10,7 @@ import studio.istart.framework.service.ResultTypeEnum;
 import studio.istart.tile.component.ImageLoader;
 import studio.istart.tile.model.ZoomLevel;
 import studio.istart.tile.service.ConfigService;
+import studio.istart.tile.storage.ImageStore;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
@@ -58,7 +59,7 @@ public class SourceApi {
         ImageLoader imageLoader = ImageLoader.builder(sourceFile);
         new Thread(() -> {
             try {
-                imageLoader.cut(new ZoomLevel(1), baseDir);
+                imageLoader.cut(new ZoomLevel(1), baseDir, new ImageStore(ConfigService.baseDir));
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
             }

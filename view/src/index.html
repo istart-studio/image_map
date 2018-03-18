@@ -48,7 +48,7 @@
 
             </div>
             <div id="drawControl" class="controls">
-                <label>绘制方式 &nbsp; 点击开始，双击结束</label>
+                <label>绘制方式 &nbsp; 自动吸附闭合点，单点选中图案</label>
                 <select id="type" onchange="addInteraction()">
                     <option value="Polygon">自定义形状</option>
                     <option value="Point">点</option>
@@ -57,6 +57,13 @@
                     <option value="Square">正方形</option>
                     <option value="Box">矩形</option>
                 </select>
+
+                <ul class="choose_shape">
+                    <li class="circle_shape" id="Circle" title="圆形"></li>
+                    <li class="rect_shape" id="Box" title="矩形"></li>
+                    <li class="ellipse_shape" id="aEllipse" title="椭圆"></li>
+                    <li class="polygon_shape" id="Polygon" title="自由笔"></li>
+                </ul>
             </div>
 
             <table id="colorControl" class="controls">
@@ -127,7 +134,7 @@
 <script>
     //map
 
-    var api_host = "http://127.0.0.1:19797";//http://127.0.0.1:19797
+    var api_host = "";//http://127.0.0.1:19797
     var userInfo = {};
     var imageInfo = {};
     var areaInfo = [];
@@ -168,7 +175,7 @@
     }
 
     var chartSource = new ol.source.XYZ({
-        url: api_host + '/source/tiles/' + imageInfo.name + '/{z}/{x}_{y}',
+        url: "http://medical2018.oss-cn-hangzhou.aliyuncs.com/" + imageInfo.name + '_{z}_{x}_{y}.jpg',
         crossOrigin: '',
     });
     var maxZoom = imageInfo.maxLevel;
@@ -356,7 +363,6 @@
     //area 创建绘制层并将绘制层添加到地图容器中：
 
 
-
     var features = new ol.Collection();
     var areaLayerSource = new ol.source.Vector({
         wrapX: false,
@@ -410,11 +416,13 @@
         //Call to double click zoom control function to deactivate zoom event
         controlDoubleClickZoom(false);
         //Delay execution of activation of double click zoom function
-        setTimeout(function(){controlDoubleClickZoom(true);},251);
+        setTimeout(function () {
+            controlDoubleClickZoom(true);
+        }, 251);
     }
 
     //Control active state of double click zoom interaction
-    function controlDoubleClickZoom(active){
+    function controlDoubleClickZoom(active) {
         //Find double click interaction
         var interactions = map.getInteractions();
         for (var i = 0; i < interactions.getLength(); i++) {
@@ -454,8 +462,6 @@
             map.removeInteraction(draw);//移除绘画互动
         });
     }
-
-
 
 
     //选取区域
