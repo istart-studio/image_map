@@ -29,6 +29,7 @@
             border-radius: 6px;
             border-width: 1px;
         }
+
     </style>
 </head>
 <body>
@@ -48,22 +49,26 @@
 
             </div>
             <div id="drawControl" class="controls">
-                <label>绘制方式 &nbsp; 自动吸附闭合点，单点选中图案</label>
-                <select id="type" onchange="addInteraction()">
-                    <option value="Polygon">自定义形状</option>
-                    <option value="Point">点</option>
-                    <option value="LineString">线</option>
-                    <option value="Circle">圆</option>
-                    <option value="Square">正方形</option>
-                    <option value="Box">矩形</option>
-                </select>
+                <!--<select id="type" onchange="addInteraction()">-->
+                <!--<option value="Polygon">自定义形状</option>-->
+                <!--<option value="Point">点</option>-->
+                <!--<option value="LineString">线</option>-->
+                <!--<option value="Circle">圆</option>-->
+                <!--<option value="Square">正方形</option>-->
+                <!--<option value="Box">矩形</option>-->
+                <!--</select>-->
 
-                <ul class="choose_shape">
-                    <li class="circle_shape" id="Circle" title="圆形"></li>
-                    <li class="rect_shape" id="Box" title="矩形"></li>
-                    <li class="ellipse_shape" id="aEllipse" title="椭圆"></li>
-                    <li class="polygon_shape" id="Polygon" title="自由笔"></li>
-                </ul>
+                <div class="btn-group" role="group" aria-label="...">
+                    <button type="button" class="btn btn-default" onclick="changeDrawShape('Circle')">
+                        <img src="public/image/circle.png" height="16" width="16"/>
+                    </button>
+                    <button type="button" class="btn btn-default" onclick="changeDrawShape('Box')">
+                        <img src="public/image/rect.png" height="16" width="16"/>
+                    </button>
+                    <button type="button" class="btn btn-default" onclick="changeDrawShape('Polygon')">
+                        <img src="public/image/polygon.png" height="16" width="16"/>
+                    </button>
+                </div>
             </div>
 
             <table id="colorControl" class="controls">
@@ -124,7 +129,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-default" onclick="cancelArea()">删除</button>
+                    <button type="button" class="btn btn-default" onclick="cancelArea(true)">删除</button>
                     <button type="button" class="btn btn-primary" onclick="saveArea()">保存</button>
                 </div>
             </div>
@@ -134,7 +139,7 @@
 <script>
     //map
 
-    var api_host = "";//http://127.0.0.1:19797
+    var api_host = "http://127.0.0.1:19797";//http://127.0.0.1:19797
     var userInfo = {};
     var imageInfo = {};
     var areaInfo = [];
@@ -393,7 +398,8 @@
                 id: area.areaId,
                 geometry: new ol.geom.Polygon(
                     area.coordinates
-                )
+                ),
+                content: area.content
             });
             features.push(polygon_feature);
         })
@@ -408,7 +414,6 @@
     function startDraw() {
         hideAllControls();
         $('#drawControl').show();
-        addInteraction();
     }
 
     //Setup drawend event handle function
@@ -433,33 +438,53 @@
         }
     }
 
-    function addInteraction() {
-        var value = typeSelect.value;
-        var geometryFunction;
-        if (value === 'Square') {
-            value = 'Circle';
-            geometryFunction = ol.interaction.Draw.createRegularPolygon(4);
-        } else if (value === 'Box') {
-            value = 'Circle';
-            geometryFunction = ol.interaction.Draw.createBox();
-        }
-        draw = new ol.interaction.Draw({
+    function changeDrawShape(shape) {
+        map.removeInteraction(draw);
+        addInteraction(shape)
+    }
+
+    var isDrawing = false;
+
+    function addInteraction(shape) {
+        var value = shape;//typeSelect.value;
+        var drawConfig = {
             source: areaLayerSource,
             // features: features,
             type: value,
-            geometryFunction: geometryFunction,
-        });
+        };
+        if (value === 'Square') {
+            drawConfig.type = 'Circle';
+            drawConfig.geometryFunction = ol.interaction.Draw.createRegularPolygon(4);
+        } else if (value === 'Box') {
+            drawConfig.type = 'Circle';
+            drawConfig.geometryFunction = ol.interaction.Draw.createBox();
+        } else if (value === 'Circle') {
+            drawConfig.geometryFunction = ol.interaction.Draw.createRegularPolygon();
+        }
+        draw = new ol.interaction.Draw(drawConfig);
         map.addInteraction(draw);
         draw.on('drawstart', function (event) {
             selectedAreaId = undefined;
             selectedAreaPos = undefined;
-        })
+            isDrawing = true;
+            console.log("draw start")
+        });
+        //画图结束
         draw.on('drawend', function (event) {//绘画完成触发时间
-            event.feature.setProperties({//id等基本属性
-                'id': baseId + new Date().getTime(),
-            });
+            console.log("draw end")
             onFinishSelection(event);
             map.removeInteraction(draw);//移除绘画互动
+            event.feature.setProperties({//id等基本属性
+                'id': baseId + new Date().getTime(),
+                content: '',
+            });
+            // ...
+            console.log("add feature");
+            var feature = event.feature;
+            selectedAreaPos = feature.getGeometry().getCoordinates();
+            selectedAreaId = feature.get("id");
+
+            $('#areaInfoModal').modal();
         });
     }
 
@@ -469,41 +494,55 @@
     var selectedAreaPos;
     var selectCtrl = new ol.interaction.Select();
     map.addInteraction(selectCtrl);
-    selectCtrl.on('select', function (e) {
-        console.log("select features length:" + e.target.getFeatures().getLength());
-        //层叠 选择第一个区域
-        var selectedArea = e.selected[0];
-        console.log(selectedArea);
-        if (selectedArea) {
-            selectedAreaId = selectedArea.get('id');
-            console.log(selectedAreaId);
-            if (selectedAreaId) {
+    map.on('click', function (e) {
+        var features = map.getFeaturesAtPixel(e.pixel);
+        if (features) {
+            var selectedArea = features[0];
+            if (!isDrawing) {
+                console.log('selected');
                 selectedAreaPos = selectedArea.getGeometry().getCoordinates();
-                areaInfo.forEach(function (area) {
-                    if (area.areaId == selectedAreaId) {
-                        $("#area_content").val(area.content);
+                console.log(selectedAreaPos);
+                selectedAreaId = selectedArea.get('id');
+                var selectedContent;
+                //得到图形
+                // areaInfo.forEach(function (area) {
+                //     if (area.areaId == selectedAreaId) {
+                //         selectedContent = area.content;
+                //     }
+                // })
+                var features = areaLayerSource.getFeatures();
+                features.forEach(function (feature) {
+                    if (feature.get('id') == selectedAreaId) {
+                        selectedContent = feature.get('content');
+                        $("#area_content").val(selectedContent);
+                        $('#areaInfoModal').modal();
                     }
-                })
-                $('#areaInfoModal').modal();
+                });
+                
             }
         }
     });
 
     //保存区域信息
     function saveArea() {
-
-        var areaInfo = {areaId: "", content: "", coordinates: []};
-        areaInfo.areaId = selectedAreaId;
-        areaInfo.content = $("#area_content").val();
-        areaInfo.coordinates = selectedAreaPos;
+        var areaPost = {areaId: "", content: "", coordinates: []};
+        if (selectedAreaPos && selectedAreaId) {
+            areaPost.areaId = selectedAreaId;
+            areaPost.content = $("#area_content").val();
+            areaPost.coordinates = selectedAreaPos;
+        } else {
+            alert('非法作图，请重新构建');
+            cancelArea(false);
+            return;
+        }
         console.log("保存区域信息:");
-        console.log(areaInfo);
+        console.log(areaPost);
 
         //post server api
         console.log("提交区域信息:")
         $.ajax({
             url: api_host + "/area/save",
-            data: JSON.stringify(areaInfo),
+            data: JSON.stringify(areaPost),
             method: "POST",
             contentType: 'application/json',
             dataType: 'json',
@@ -511,17 +550,23 @@
             console.log(serviceResult);
             if (serviceResult.reCode == 1000) {
                 console.log("add area done!");
+                var features = areaLayerSource.getFeatures();
+                features.forEach(function (feature) {
+                    if (feature.get('id') == selectedAreaId) {
+                        feature.set('content', areaPost.content);
+                    }
+                });
             } else {
                 console.error(serviceResult);
             }
         });
-
-        selectCtrl.getFeatures().clear();
+        isDrawing = false;
+        // selectCtrl.getFeatures().clear();
         $('#areaInfoModal').modal('hide');
     }
 
     //删除区域信息
-    function cancelArea() {
+    function cancelArea(isPost) {
         var features = areaLayerSource.getFeatures();
         features.forEach(function (feature) {
             if (feature.get('id') === selectedAreaId) {
@@ -529,17 +574,19 @@
                 selectCtrl.getFeatures().clear();
                 areaLayerSource.removeFeature(feature);
                 //post server api
-                $.ajax({
-                    url: api_host + "/area/del?areaId=" + selectedAreaId,
-                    method: "GET"
-                }).done(function (serviceResult) {
-                    console.log(serviceResult);
-                    if (serviceResult.reCode == 1000) {
-                        console.log("del area done!");
-                    } else {
-                        console.error(serviceResult);
-                    }
-                });
+                if (isPost) {
+                    $.ajax({
+                        url: api_host + "/area/del?areaId=" + selectedAreaId,
+                        method: "GET"
+                    }).done(function (serviceResult) {
+                        console.log(serviceResult);
+                        if (serviceResult.reCode == 1000) {
+                            console.log("del area done!");
+                        } else {
+                            console.error(serviceResult);
+                        }
+                    });
+                }
             }
         });
         $('#areaInfoModal').modal('hide');

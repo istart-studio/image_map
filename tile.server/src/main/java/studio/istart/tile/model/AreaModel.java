@@ -23,7 +23,7 @@ public class AreaModel {
     /**
      * 区域坐标
      */
-    private Double[][][] coordinates;
+    private Object[][][] coordinates;
 
     /**
      * 标记内容
