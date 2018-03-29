@@ -3,13 +3,12 @@
  * @param colorChangeFn
  * @param maxZoom
  */
-var basic = function (colorChangeFn, maxZoom) {
-
+var basic = function (source, maxZoom) {
     this.chartSource = new ol.source.XYZ({
         url: "http://medical2018.oss-cn-hangzhou.aliyuncs.com/" + imageInfo.name + '_{z}_{x}_{y}.jpg',
         crossOrigin: '',
     });
-    this.source = new colorChangeFn(this.chartSource).raster;
+    this.source = new source(this.chartSource).raster;
     this.map = new ol.Map({
         layers: [new ol.layer.Image({
             source: this.source
@@ -73,6 +72,7 @@ var basic_area = function (map) {
             features.push(polygon_feature);
         })
     }
+
     //Control active state of double click zoom interaction
     function controlDoubleClickZoom(active) {
         //Find double click interaction
@@ -84,6 +84,7 @@ var basic_area = function (map) {
             }
         }
     }
+
     //Setup drawend event handle function
     function onFinishSelection(evt) {
         //Call to double click zoom control function to deactivate zoom event
@@ -172,9 +173,6 @@ var basic_area = function (map) {
         this.addDraw(shape)
     }
 
-
-
-
     /**
      * 保存区域信息
      */
@@ -251,7 +249,7 @@ var basic_area = function (map) {
 /**
  * 改变图层颜色
  */
-var colorChangeFn = function (chartSource) {
+var basic_colorChange = function (chartSource) {
     /**
      * Color manipulation functions below are adapted from
      * https://github.com/d3/d3-color.
@@ -346,20 +344,50 @@ var colorChangeFn = function (chartSource) {
             12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055);
     }
 
+    var initSliderCtrl = function () {
+        $("#hueCtrl").slider({
+            orientation: "horizontal",
+            range: "min",
+            min: -180,
+            max: 180,
+            value: 0,
+            slide: refreshSwatch,
+            change: refreshSwatch
+        });
+        $("#chromaCtrl,#lightnessCtrl").slider({
+            orientation: "horizontal",
+            range: "min",
+            min: 0,
+            max: 100,
+            value: 100,
+            slide: refreshSwatch,
+            change: refreshSwatch
+        });
+
+        function refreshSwatch() {
+            var hex = $("#hueCtrl").slider("value");
+            console.log(hex);
+            _raster.changed();
+        }
+    }
+
+    initSliderCtrl();
+
     //亮度 饱和度 对比度
     var controls = {};
     var controlIds = ['hue', 'chroma', 'lightness'];
     controlIds.forEach(function (id) {
-        var control = document.getElementById(id);
-        var output = document.getElementById(id + 'Out');
-        control.addEventListener('input', function () {
-            output.innerText = control.value;
-            //change color prop
-            // raster.changed();
-        });
-        output.innerText = control.value;
+        var control = $("#" + id + "Ctrl");//document.getElementById(id);
+        // var output = document.getElementById(id + 'Out');
+        // control.addEventListener('input', function () {
+        // output.innerText = control.value;
+        //change color prop
+        // _raster.changed();
+        // });
+        // output.innerText = control.value;
         controls[id] = control;
     });
+
     this.raster = new ol.source.Raster({
         sources: [chartSource],
         operation: function (pixels, data) {
@@ -398,57 +426,61 @@ var colorChangeFn = function (chartSource) {
     this.raster.on('beforeoperations', function (event) {
         var data = event.data;
         for (var id in controls) {
-            data[id] = Number(controls[id].value);
+            data[id] = Number(controls[id].slider("value"));//.value);
         }
     });
+    var _raster = this.raster;
 }
 
 /**
  * 导出当前图层，并上传
  */
 var exportMapFn = function (map) {
-    hideAllControls();
-    map.once('postcompose', function (event) {
-        var dataURL;
-        var canvas = event.context.canvas;
-        if (ol.has.DEVICE_PIXEL_RATIO == 1) {
-            dataURL = canvas.toDataURL('image/png');
-        } else {
-            var targetCanvas = document.createElement('canvas');
-            var size = map.getSize();
-            targetCanvas.width = size[0];
-            targetCanvas.height = size[1];
-            targetCanvas.getContext('2d').drawImage(canvas,
-                0, 0, canvas.width, canvas.height,
-                0, 0, targetCanvas.width, targetCanvas.height);
-            dataURL = targetCanvas.toDataURL('image/png');
-        }
-        console.log(dataURL);
-        $('#exportMapModal').modal();
-        $('#mapImage').attr('src', dataURL);
-
-        //post server api
-        console.log("提交图片快照:");
-        var imageName = userInfo.userId + "_" + new Date().getTime() + "_SNAPSHOT";
-        var imageType = "PNG";
-        var imageSnapshot = {imageName: imageName, imageType: imageType, imageBase64: dataURL};
-        $.ajax({
-            url: api_host + "/snapshot/upload",
-            data: JSON.stringify(imageSnapshot),
-            method: "POST",
-            contentType: 'application/json',
-            dataType: 'json',
-        }).done(function (serviceResult) {
-            console.log(serviceResult);
-            if (serviceResult.reCode == 1000) {
-                alert("上传成功!");
+    this.click = function () {
+        hideAllControls();
+        map.once('postcompose', function (event) {
+            var dataURL;
+            var canvas = event.context.canvas;
+            if (ol.has.DEVICE_PIXEL_RATIO == 1) {
+                dataURL = canvas.toDataURL('image/png');
             } else {
-                console.error(serviceResult);
+                var targetCanvas = document.createElement('canvas');
+                var size = map.getSize();
+                targetCanvas.width = size[0];
+                targetCanvas.height = size[1];
+                targetCanvas.getContext('2d').drawImage(canvas,
+                    0, 0, canvas.width, canvas.height,
+                    0, 0, targetCanvas.width, targetCanvas.height);
+                dataURL = targetCanvas.toDataURL('image/png');
             }
+            console.log(dataURL);
+            $('#exportMapModal').modal();
+            $('#mapImage').attr('src', dataURL);
+
+            //post server api
+            console.log("提交图片快照:");
+            var imageName = userInfo.userId + "_" + new Date().getTime() + "_SNAPSHOT";
+            var imageType = "PNG";
+            var imageSnapshot = {imageName: imageName, imageType: imageType, imageBase64: dataURL};
+            $.ajax({
+                url: api_host + "/snapshot/upload",
+                data: JSON.stringify(imageSnapshot),
+                method: "POST",
+                contentType: 'application/json',
+                dataType: 'json',
+            }).done(function (serviceResult) {
+                console.log(serviceResult);
+                if (serviceResult.reCode == 1000) {
+                    alert("上传成功!");
+                } else {
+                    console.error(serviceResult);
+                }
+            });
         });
-    });
-    map.renderSync();
+        map.renderSync();
+    }
 }
+
 
 /**
  * 隐藏所有控件
@@ -458,7 +490,7 @@ var hideAllControls = function () {
 }
 
 /**
- * 显示颜色控件
+ * 显示控件
  */
 var showControl = function (controlId) {
     hideAllControls();
@@ -497,10 +529,10 @@ var areaInfo = [];
 var maxZoom = imageInfo.maxLevel;
 
 
-
 requestData();
 hideAllControls();
 
-basic_Instance = new basic(colorChangeFn, maxZoom);
-basic_area_instance = new basic_area(basic_Instance.map);
+basic_instance = new basic(basic_colorChange, maxZoom);
+basic_area_instance = new basic_area(basic_instance.map);
 basic_area_instance.initAreaFeatures(areaInfo);
+exportMapFn = new exportMapFn(basic_instance.map);

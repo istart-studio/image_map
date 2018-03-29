@@ -5,15 +5,16 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport"
           content="width=device-width,height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+
     <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
     <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <link href="https://cdn.bootcss.com/jqueryui/1.12.1/jquery-ui.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
     <link href="https://cdn.bootcss.com/openlayers/4.6.4/ol-debug.css" rel="stylesheet">
     <script src="https://cdn.bootcss.com/openlayers/4.6.4/ol-debug.js"></script>
-    <!--<link href="https://cdn.bootcss.com/openlayers/3.20.1/ol.css" rel="stylesheet">-->
-    <!--<script src="https://cdn.bootcss.com/openlayers/3.20.1/ol.js"></script>-->
-    <!--<link href="https://cdn.bootcss.com/openlayers/3.8.2/ol-debug.css" rel="stylesheet">-->
-    <!--<script src="https://cdn.bootcss.com/openlayers/3.8.2/ol-debug.js"></script>-->
     <style>
         body {
             padding-top: 20px;
@@ -45,20 +46,13 @@
                 <a class="btn btn-primary" onclick="showControl('#colorControl')">
                     <span class="glyphicon glyphicon-adjust"></span><span>颜色</span></a>
                 <!-- export map -->
-                <a class="btn btn-primary" onclick="exportMapFn()">
+                <a class="btn btn-primary" onclick="exportMapFn.click()">
                     <span class="glyphicon glyphicon-upload"></span><span>上传当前图像</span></a>
 
             </div>
-            <div id="drawControl" class="controls">
-                <!--<select id="type" onchange="addInteraction()">-->
-                <!--<option value="Polygon">自定义形状</option>-->
-                <!--<option value="Point">点</option>-->
-                <!--<option value="LineString">线</option>-->
-                <!--<option value="Circle">圆</option>-->
-                <!--<option value="Square">正方形</option>-->
-                <!--<option value="Box">矩形</option>-->
-                <!--</select>-->
 
+            <!-- draw area -->
+            <div id="drawControl" class="controls" style="padding-top: 20px">
                 <div class="btn-group" role="group" aria-label="...">
                     <button type="button" class="btn btn-default"
                             onclick="basic_area_instance.changeDrawShape('Circle')">
@@ -73,29 +67,32 @@
                         <img src="public/image/polygon.png" height="16" width="16"/>
                     </button>
                 </div>
+            </div  style="padding-top: 20px">
+            <!-- color-->
+            <div id="colorControl" class="controls" style="padding-top: 20px">
+
+                <div class="row">
+                    <label class="col-sm-2 control-label">色度</label>
+                    <div class="col-sm-5">
+                        <div id="hueCtrl"></div>
+                    </div>
+                </div>
+                <div class="row">
+                    <label class="col-sm-2 control-label">浓度</label>
+                    <div class="col-sm-5">
+                        <div id="chromaCtrl"></div>
+                    </div>
+                </div>
+                <div class="row">
+                    <label class="col-sm-2 control-label">亮度</label>
+                    <div class="col-sm-5">
+                        <div id="lightnessCtrl"></div>
+                    </div>
+                </div>
+
             </div>
-
-            <table id="colorControl" class="controls">
-                <tr>
-                    <td>hue</td>
-                    <td><span id="hueOut"></span>°</td>
-                    <td><input id="hue" type="range" min="-180" max="180" value="0"/></td>
-                </tr>
-                <tr>
-                    <td>chroma</td>
-                    <td><span id="chromaOut"></span> %</td>
-                    <td><input id="chroma" type="range" min="0" max="100" value="100"/></td>
-                </tr>
-                <tr>
-                    <td>lightness</td>
-                    <td><span id="lightnessOut"></span> %</td>
-                    <td><input id="lightness" type="range" min="0" max="100" value="100"/></td>
-                </tr>
-            </table>
         </div>
 
-        <div id="exportMapControl" class="controls">
-        </div>
         <div class="panel-body">
             <div id="map" class="map" style="height: 70vh;"></div>
         </div>
