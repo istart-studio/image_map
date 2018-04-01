@@ -1,3 +1,10 @@
+window.onload = function () {
+    setTimeout(function () {
+        basic_instance.map.updateSize();
+        basic_instance.source.refresh();
+    }, 100);
+}
+
 /**
  * 基础底图
  * @param colorChangeFn
@@ -9,16 +16,22 @@ var basic = function (source, maxZoom) {
         crossOrigin: '',
     });
     this.source = new source(this.chartSource).raster;
+    this.sourceLayer = new ol.layer.Image({
+        source: this.source
+    });
     this.map = new ol.Map({
-        layers: [new ol.layer.Image({
-            source: this.source
-        })],
+        layers: [this.sourceLayer],
         target: 'map',
-        controls: ol.control.defaults({
-            attributionOptions: {
-                collapsible: false
-            }
-        }),
+        // controls: ol.control.defaults({
+        //     attributionOptions: {
+        //         collapsible: false
+        //     }
+        // }),
+        controls: ol.control.defaults().extend([
+            // new ol.control.OverviewMap(),
+            new ol.control.ZoomSlider(),
+        ]),
+
         view: new ol.View({
             center: ol.proj.transform(
                 [0, 0], 'EPSG:4326', 'EPSG:3857'),
@@ -27,6 +40,14 @@ var basic = function (source, maxZoom) {
             maxZoom: maxZoom,
         })
     });
+    this.map.addControl(new ol.control.Zoom({
+        zoomInTipLabel: "放大",
+        zoomOutTipLabel: "缩小",
+    }));
+    // this.map.addControl(new ol.control.ZoomSlider());
+    // this.map.addControl(new ol.control.OverviewMap({
+    //     collapsed: false,
+    // }));
 }
 
 /**
@@ -378,13 +399,6 @@ var basic_colorChange = function (chartSource) {
     var controlIds = ['hue', 'chroma', 'lightness'];
     controlIds.forEach(function (id) {
         var control = $("#" + id + "Ctrl");//document.getElementById(id);
-        // var output = document.getElementById(id + 'Out');
-        // control.addEventListener('input', function () {
-        // output.innerText = control.value;
-        //change color prop
-        // _raster.changed();
-        // });
-        // output.innerText = control.value;
         controls[id] = control;
     });
 
@@ -526,13 +540,15 @@ var api_host = "http://127.0.0.1:19797";
 var userInfo = {};
 var imageInfo = {};
 var areaInfo = [];
-var maxZoom = imageInfo.maxLevel;
 
 
 requestData();
 hideAllControls();
 
+var maxZoom = imageInfo.maxLevel;
 basic_instance = new basic(basic_colorChange, maxZoom);
 basic_area_instance = new basic_area(basic_instance.map);
 basic_area_instance.initAreaFeatures(areaInfo);
 exportMapFn = new exportMapFn(basic_instance.map);
+
+

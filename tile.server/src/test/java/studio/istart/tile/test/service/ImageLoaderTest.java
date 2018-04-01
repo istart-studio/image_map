@@ -19,28 +19,33 @@ public class ImageLoaderTest {
     @Deprecated
     public void zoom() throws IOException {
         ImageLoader
-            .builder(new File("/Users/dongyan/Downloads/original/4_6827_13793.jpg"))
-            .setZLevel(new ZoomLevel(1))
-            .zoom()
-            .toFile(new File("/Users/dongyan/Downloads/dest/zoom.jpg"));
+                .builder(new File("/Users/dongyan/Downloads/original/4_6827_13793.jpg"))
+                .setZLevel(new ZoomLevel(1))
+                .zoom()
+                .toFile(new File("/Users/dongyan/Downloads/dest/zoom.jpg"));
     }
 
     @Test
     @Deprecated
     public void fill() throws IOException {
         ImageLoader
-            .builder(new File("/Users/dongyan/Downloads/original/4_6827_13793.jpg"))
-            .setZLevel(new ZoomLevel(1))
-            .zoom()
-            .toFile(new File("/Users/dongyan/Downloads/dest/zoom.jpg"))
-            .fill()
-            .toFile(new File("/Users/dongyan/Downloads/dest/fill.jpg"));
+                .builder(new File("/Users/dongyan/Downloads/original/4_6827_13793.jpg"))
+                .setZLevel(new ZoomLevel(1))
+                .zoom()
+                .toFile(new File("/Users/dongyan/Downloads/dest/zoom.jpg"))
+                .fill()
+                .toFile(new File("/Users/dongyan/Downloads/dest/fill.jpg"));
     }
 
     @Test
     public void cut() throws Exception {
         ImageLoader
-            .builder(new File("/Users/dongyan/Downloads/source/thumbnail4.jpg"))
-            .cut(new ZoomLevel(1), "/Users/dongyan/Downloads/source/tiles", new ImageStore("/Users/dongyan/Downloads/source/"));
+                .builder(new File("/Users/dongyan/Downloads/source/thumbnail4.jpg"))
+                .cut(new ZoomLevel(0), new ImageStore());
+    }
+
+    @Test
+    public void cutSub() throws Exception {
+        ImageLoader.cut(new ZoomLevel(0), new ZoomLevel(1), "thumbnail4", new ImageStore());
     }
 }

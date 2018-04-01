@@ -54,21 +54,21 @@ public class SourceApi {
         File sourceFile = new File(localFilePath);
         if (!sourceFile.exists()) {
             return BaseServiceResult.builder()
-                .build(ResultTypeEnum.FILE_IS_NOT_FOUND, "", "图片不存在");
+                    .build(ResultTypeEnum.FILE_IS_NOT_FOUND, "", "图片不存在");
         }
         ImageLoader imageLoader = ImageLoader.builder(sourceFile);
         new Thread(() -> {
             try {
-                imageLoader.cut(new ZoomLevel(1), baseDir, new ImageStore(ConfigService.baseDir));
+                imageLoader.cut(new ZoomLevel(1), new ImageStore(ConfigService.baseDir));
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
             }
         }).start();
 
         return BaseServiceResult.builder()
-            .build(ResultTypeEnum.SUCCESS,
-                new ImageInfo(imageLoader.getName(), imageLoader.getMaxZoomLevel()),
-                "图片正在处理，请查看服务器日志");
+                .build(ResultTypeEnum.SUCCESS,
+                        new ImageInfo(imageLoader.getName(), imageLoader.getMaxZoomLevel()),
+                        "图片正在处理，请查看服务器日志");
     }
 
     /**

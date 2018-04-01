@@ -75,10 +75,10 @@ public class ImageLoader {
         Optional<ZoomLevel> currentZLevel = ZoomLevelComponent.matchZLevel(imageProps.getMaxLength());
         log.info("currentZLevel:{}", currentZLevel);
         Preconditions.checkState(currentZLevel.isPresent(),
-            "can't found the z-level by:" + imageProps.getMaxLength());
+                "can't found the z-level by:" + imageProps.getMaxLength());
         Preconditions.checkState(currentZLevel.isPresent() &&
-                currentZLevel.get().getLengthRange().upperEndpoint() < Integer.MAX_VALUE,
-            "not support the image length > Int.MAX_VALUE" + imageProps.getMaxLength());
+                        currentZLevel.get().getLengthRange().upperEndpoint() < Integer.MAX_VALUE,
+                "not support the image length > Int.MAX_VALUE" + imageProps.getMaxLength());
         this.zLevel = currentZLevel.get();
         return this;
     }
@@ -110,10 +110,10 @@ public class ImageLoader {
         int zoomWidth = (int) (imageProps.getWidth() * zoomRate);
         int zoomHeight = (int) (imageProps.getHeight() * zoomRate);
         Image zoomImage = originalImage.getScaledInstance(zoomWidth,
-            zoomHeight, Image.SCALE_AREA_AVERAGING);
+                zoomHeight, Image.SCALE_AREA_AVERAGING);
 
         BufferedImage outputImage = new BufferedImage(zoomImage.getWidth(null),
-            zoomImage.getHeight(null), BufferedImage.TYPE_INT_RGB);
+                zoomImage.getHeight(null), BufferedImage.TYPE_INT_RGB);
         Graphics outputImageGraphics = outputImage.getGraphics();
         outputImageGraphics.drawImage(zoomImage, 0, 0, null);
         outputImageGraphics.dispose();
@@ -128,7 +128,7 @@ public class ImageLoader {
 
     @Deprecated
     public BufferedImage fill(final ZoomLevel z, final ImageProps imageProps, final BufferedImage srcImage)
-        throws IOException {
+            throws IOException {
         //
         int destLength = z.getLengthRange().upperEndpoint().intValue();
         int destWidth = destLength;
@@ -145,18 +145,16 @@ public class ImageLoader {
         int topRightPointX = (destWidth - originalWidth) / 2;
         int topRightPointY = (destHeight - originalHeight) / 2;
         outImageGraphics.drawImage(srcImage, topRightPointX, topRightPointY,
-            null);
+                null);
         return outImage;
     }
 
-    public void cut(ZoomLevel minZoomLevel, final String baseDir, BaseTileImageStoreService storeService) throws Exception {
-        Preconditions.checkArgument(new File(baseDir).isDirectory(), baseDir + " must be directory");
-        Preconditions.checkArgument(new File(baseDir).exists(), baseDir + " must be exist");
-        cut(this.zLevel, baseDir, this.name, storeService);
+    public void cut(ZoomLevel minZoomLevel, BaseTileImageStoreService storeService) throws Exception {
+        cut(this.zLevel, this.name, storeService);
         log.info("max zoom level {} cut done!", this.zLevel.getLevel());
         int minZLevel = minZoomLevel.getLevel();
         for (int zLevel = this.zLevel.getLevel() - 1; zLevel >= minZLevel; zLevel--) {
-            cut(new ZoomLevel(zLevel), new ZoomLevel(zLevel + 1), baseDir, this.name, storeService);
+            cut(new ZoomLevel(zLevel), new ZoomLevel(zLevel + 1), this.name, storeService);
             log.info("zoom level {} cut done!", zLevel);
         }
     }
@@ -166,26 +164,16 @@ public class ImageLoader {
      * cut current zoom level tiles
      *
      * @param zLevel
-     * @param baseDir
      * @return
      * @throws IOException
      */
-    private void cut(ZoomLevel zLevel, String baseDir, String imageId, BaseTileImageStoreService storageService) throws Exception {
+    private void cut(ZoomLevel zLevel, String imageId, BaseTileImageStoreService storageService) throws Exception {
         Range<Integer> tileXRange = TileComponent.tileNumRange(zLevel);
         Range<Integer> tileYRange = TileComponent.tileNumRange(zLevel);
-        File dir = tilesDir(baseDir, imageId, zLevel);
-        if (!dir.exists()) {
-            Preconditions.checkState(dir.mkdirs());
-        }
-//        String tileTemplate = "{x}_{y}.jpg";
         for (int x = tileXRange.lowerEndpoint(); tileXRange.contains(x); x++) {
             for (int y = tileYRange.lowerEndpoint(); tileYRange.contains(y); y++) {
-//                String tileName = tileTemplate.replace("{x}", String.valueOf(x))
-//                    .replace("{y}", String.valueOf(y));
                 BufferedImage tileImage = cutCurrentLevel(x, y, TileComponent.SIZE_PIXEL);
                 storageService.save(tileImage, imageId, zLevel, x, y);
-//                ImageIO.write(tileImage, "JPG",
-//                    Paths.get(dir.getPath(), tileName).toFile());
             }
         }
     }
@@ -226,7 +214,7 @@ public class ImageLoader {
     private static int tileLength(int xOrY, int widthOrHeight, int tileSize) {
         int size = widthOrHeight - xOrY;
         return size > tileSize
-            ? tileSize : size;
+                ? tileSize : size;
     }
 
     public static File tilesDir(String baseDir, String imageId, ZoomLevel zoomLevel) {
@@ -242,31 +230,23 @@ public class ImageLoader {
      *
      * @param zLevel          difference zoom level
      * @param parentZoomLevel parent zoom level
-     * @param baseDir         base dir
      * @param imageId         image id as sub dir name
      * @throws Exception
      */
     public static void cut(final ZoomLevel zLevel, final ZoomLevel parentZoomLevel,
-                           String baseDir, String imageId, BaseTileImageStoreService storeService) throws Exception {
+                           String imageId, BaseTileImageStoreService storeService) throws Exception {
         //z总瓦片数
         Range<Integer> tileXRange = TileComponent.tileNumRange(zLevel);
         Range<Integer> tileYRange = TileComponent.tileNumRange(zLevel);
-        //存放路径
-//        File dir = tilesDir(baseDir, imageId, zLevel);
-//        File parentTilesDir = tilesDir(baseDir, imageId, parentZoomLevel);
         //瓦片模版
-//        String tileTemplate = "{x}_{y}.jpg";
         for (int x = tileXRange.lowerEndpoint(); tileXRange.contains(x); x++) {
             for (int y = tileYRange.lowerEndpoint(); tileYRange.contains(y); y++) {
-//                String tileName = tileTemplate.replace("{x}", String.valueOf(x)).replace("{y}", String.valueOf(y));
-//                log.info("sub tileName:" + tileName);
                 BufferedImage tileImage = new BufferedImage(TileComponent.SIZE_PIXEL, TileComponent.SIZE_PIXEL, BufferedImage.TYPE_INT_RGB);
                 // scale ： 256 * 2 => 256
                 BufferedImage parentTileImage = margeParentTiles(imageId, parentZoomLevel, x, y, storeService);
                 Graphics2D g2d = tileImage.createGraphics();
                 g2d.drawImage(parentTileImage, 0, 0, TileComponent.SIZE_PIXEL, TileComponent.SIZE_PIXEL, null);
                 g2d.dispose();
-
                 storeService.save(tileImage, imageId, zLevel, x, y);
 
             }
@@ -280,7 +260,7 @@ public class ImageLoader {
         Range<Integer> yRange = parentTilesRange(y);
         //draw 512(256*2) * 512(256*2)
         BufferedImage margeImage = new BufferedImage(TileComponent.SIZE_PIXEL * 2,
-            TileComponent.SIZE_PIXEL * 2, BufferedImage.TYPE_INT_RGB);
+                TileComponent.SIZE_PIXEL * 2, BufferedImage.TYPE_INT_RGB);
         for (int parentX = xRange.lowerEndpoint(), xIndex = 0;
              parentX < xRange.upperEndpoint() + 1; parentX++, xIndex++) {
             for (int parentY = yRange.lowerEndpoint(), yIndex = 0;

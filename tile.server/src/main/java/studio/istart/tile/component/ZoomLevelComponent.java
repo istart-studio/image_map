@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 @Log4j2
 public class ZoomLevelComponent {
 
-    public static final int MIN_LEVEL_NUM = 1;
+    public static final int MIN_LEVEL_NUM = 0;
     public static final int MAX_LEVEL_NUM = 23;
     public static final Range<Integer> ZOOM_LEVEL_RANGE = Range.closed(MIN_LEVEL_NUM, MAX_LEVEL_NUM);
     public static ArrayList<ZoomLevel> zLevels;

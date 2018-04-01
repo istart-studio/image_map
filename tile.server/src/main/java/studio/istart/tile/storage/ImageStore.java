@@ -22,6 +22,11 @@ public class ImageStore extends AliyunOSS implements BaseTileImageStoreService {
 
     private String baseDir;
 
+    public ImageStore() {
+
+    }
+
+    @Deprecated
     public ImageStore(String baseDir) {
         this.baseDir = baseDir;
     }
@@ -76,7 +81,7 @@ public class ImageStore extends AliyunOSS implements BaseTileImageStoreService {
     public void localSave(BufferedImage tileImage, String imageId, ZoomLevel z, int x, int y) {
         String tileTemplate = "{x}_{y}.jpg";
         String tileName = tileTemplate.replace("{x}", String.valueOf(x))
-            .replace("{y}", String.valueOf(y));
+                .replace("{y}", String.valueOf(y));
         File dir = ImageLoader.tilesDir(baseDir, imageId, z);
         try {
             ImageIO.write(tileImage, "JPG", Paths.get(dir.getPath(), tileName).toFile());
