@@ -563,7 +563,7 @@ if (!ol.has.WEBGL) {
     alert("你的浏览器不支持WEBGL!请尝试使用最新版谷歌浏览器");
 }
 
-var api_host = "http://127.0.0.1:19797";
+var api_host = "";//"http://127.0.0.1:19797";
 var userInfo = {};
 var imageInfo = {};
 var areaInfo = [];

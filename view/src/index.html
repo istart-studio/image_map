@@ -63,51 +63,52 @@
         <div class="panel-heading">
             <div class="btn-group" role="group" aria-label="...">
                 <!-- draw pen -->
-                <a class="btn btn-primary" onclick="showControl('#drawControl')">
+                <a class="btn btn-primary tools" onclick="showControl(this,'#drawControl')">
                     <span class="glyphicon glyphicon-pencil"></span><span>标绘</span></a>
                 <!-- change color -->
-                <a class="btn btn-primary" onclick="showControl('#colorControl')">
+                <a class="btn btn-primary tools" onclick="showControl(this,'#colorControl')">
                     <span class="glyphicon glyphicon-adjust"></span><span>颜色</span></a>
                 <!-- export map -->
-                <a class="btn btn-primary" onclick="exportMapFn.click()">
+                <a class="btn btn-primary tools" onclick="exportMapFn.click()">
                     <span class="glyphicon glyphicon-upload"></span><span>上传当前图像</span></a>
-
             </div>
 
             <!-- draw area -->
-            <div id="drawControl" class="controls" style="padding-top: 20px">
-                <div class="btn-group" role="group" aria-label="...">
-                    <button type="button" class="btn btn-default"
-                            onclick="basic_area_instance.changeDrawShape('Circle')">
-                        <img src="public/image/circle.png" height="16" width="16"/>
-                    </button>
-                    <button type="button" class="btn btn-default"
-                            onclick="basic_area_instance.changeDrawShape('Box')">
-                        <img src="public/image/rect.png" height="16" width="16"/>
-                    </button>
-                    <button type="button" class="btn btn-default"
-                            onclick="basic_area_instance.changeDrawShape('Polygon')">
-                        <img src="public/image/polygon.png" height="16" width="16"/>
-                    </button>
-                </div>
-                <!-- draw color -->
-                <div class="btn-group" role="group" aria-label="...">
-                    <button type="button" class="btn btn-default"
-                            onclick="basic_area_instance.changeDrawColor('Red')">
-                        <img src="public/image/r.png" height="16" width="16"/>
-                    </button>
-                    <button type="button" class="btn btn-default"
-                            onclick="basic_area_instance.changeDrawColor('Green')">
-                        <img src="public/image/g.png" height="16" width="16"/>
-                    </button>
-                    <button type="button" class="btn btn-default"
-                            onclick="basic_area_instance.changeDrawColor('Blue')">
-                        <img src="public/image/b.png" height="16" width="16"/>
-                    </button>
+            <div class="collapse controls" id="drawControl" style="padding-top: 20px">
+                <div class="well">
+                    <div class="btn-group" role="group" aria-label="...">
+                        <button type="button" class="btn btn-default"
+                                onclick="basic_area_instance.changeDrawShape('Circle')">
+                            <img src="public/image/circle.png" height="16" width="16"/>
+                        </button>
+                        <button type="button" class="btn btn-default"
+                                onclick="basic_area_instance.changeDrawShape('Box')">
+                            <img src="public/image/rect.png" height="16" width="16"/>
+                        </button>
+                        <button type="button" class="btn btn-default"
+                                onclick="basic_area_instance.changeDrawShape('Polygon')">
+                            <img src="public/image/polygon.png" height="16" width="16"/>
+                        </button>
+                    </div>
+                    <!-- draw color -->
+                    <div class="btn-group" role="group" aria-label="...">
+                        <button type="button" class="btn btn-default"
+                                onclick="basic_area_instance.changeDrawColor('Red')">
+                            <img src="public/image/r.png" height="16" width="16"/>
+                        </button>
+                        <button type="button" class="btn btn-default"
+                                onclick="basic_area_instance.changeDrawColor('Green')">
+                            <img src="public/image/g.png" height="16" width="16"/>
+                        </button>
+                        <button type="button" class="btn btn-default"
+                                onclick="basic_area_instance.changeDrawColor('Blue')">
+                            <img src="public/image/b.png" height="16" width="16"/>
+                        </button>
+                    </div>
                 </div>
             </div>
             <!-- color-->
-            <div id="colorControl" class="controls" style="padding-top: 20px">
+            <div id="colorControl" class="collapse controls" style="padding-top: 20px">
 
                 <div class="row">
                     <label class="col-sm-2 control-label">色度</label>
