@@ -22,11 +22,6 @@ var basic = function (source, maxZoom) {
     this.map = new ol.Map({
         layers: [this.sourceLayer],
         target: 'map',
-        // controls: ol.control.defaults({
-        //     attributionOptions: {
-        //         collapsible: false
-        //     }
-        // }),
         controls: ol.control.defaults().extend([
             // new ol.control.OverviewMap(),
             new ol.control.ZoomSlider(),
@@ -44,55 +39,60 @@ var basic = function (source, maxZoom) {
         zoomInTipLabel: "放大",
         zoomOutTipLabel: "缩小",
     }));
-    // this.map.addControl(new ol.control.ZoomSlider());
-    // this.map.addControl(new ol.control.OverviewMap({
-    //     collapsed: false,
-    // }));
 }
 
 /**
  * 区域功能
  */
-var basic_area = function (map) {
+var basic_area = function (map, areaInfo) {
 
-    var features = new ol.Collection();
     var areaLayerSource = new ol.source.Vector({
         wrapX: false,
-        features: features
+        features: new ol.Collection(),
     });
-    var areaLayer = new ol.layer.Vector({
-        source: areaLayerSource,
-        style: new ol.style.Style({
-            fill: new ol.style.Fill({
-                color: 'rgba(255,255,255,0.3)'
-            }),
-            stroke: new ol.style.Stroke({
-                color: '#ffcc33',
-                width: 1
-            }),
-            image: new ol.style.Circle({
-                radius: 7,
-                fill: new ol.style.Fill({
-                    color: '#ffcc33'
-                }),
-            }),
-        }),
-    });
-    areaLayer.setMap(map);//将绘制层添加到地图容器中
-    //init
-
+    /**
+     * 加载区域图形
+     * @param areaInfo
+     */
     this.initAreaFeatures = function (areaInfo) {
+        var features = [];
         areaInfo.forEach(function (area) {
             var polygon_feature = new ol.Feature({
-                id: area.areaId,
-                geometry: new ol.geom.Polygon(
-                    area.coordinates
-                ),
-                content: area.content
-            });
+                    id: area.areaId,
+                    geometry: new ol.geom.Polygon(
+                        area.coordinates
+                    ),
+                    content: area.content,
+                    //todo:
+                    color: area.color,
+                })
+            ;
             features.push(polygon_feature);
         })
+        areaLayerSource.addFeatures(features);
+        areaLayerSource.changed();
     }
+
+    var _color = "red";
+    var styleFunction = function (feature) {
+        var color = feature.get("color");
+        if (color) {
+            var retStyle = new ol.style.Style({
+                stroke: new ol.style.Stroke({
+                    color: color,
+                    width: 1
+                })
+            });
+            return retStyle;
+        }
+    }
+    var areaLayer = new ol.layer.Vector({
+        source: areaLayerSource,
+        // style: areaLayerStyle,
+        style: styleFunction
+    });
+    areaLayer.setMap(map);//将绘制层添加到地图容器中
+
 
     //Control active state of double click zoom interaction
     function controlDoubleClickZoom(active) {
@@ -116,9 +116,9 @@ var basic_area = function (map) {
         }, 251);
     }
 
-    var selectAreaData = {id: undefined, pos: undefined};
+    var selectAreaData = {id: undefined, pos: undefined, color: _color};
     var setSelectedValue = function (id, pos) {
-        selectAreaData = {id: id, pos: pos};
+        selectAreaData = {id: id, pos: pos, color: _color};
         console.log(selectAreaData)
     }
     var selectCtrl = new ol.interaction.Select();
@@ -129,7 +129,7 @@ var basic_area = function (map) {
             var selectedArea = features[0];
             if (!isDrawing) {
                 console.log('selected');
-                setSelectedValue(selectedArea.get('id'), selectedArea.getGeometry().getCoordinates());
+                setSelectedValue(selectedArea.get('id'), selectedArea.getGeometry().getCoordinates(), selectedArea.get("color"));
                 var selectedContent;
                 var features = areaLayerSource.getFeatures();
                 features.forEach(function (feature) {
@@ -139,7 +139,6 @@ var basic_area = function (map) {
                         $('#areaInfoModal').modal();
                     }
                 });
-
             }
         }
     });
@@ -147,9 +146,17 @@ var basic_area = function (map) {
     var draw;
     var isDrawing = false;
     var draw_start = function (event) {
-        setSelectedValue(undefined, undefined);
+        setSelectedValue(undefined, undefined, _color);
         isDrawing = true;
         console.log("draw start")
+        var featureStyle = new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: _color,
+                width: 1
+            })
+        });
+
+        event.feature.setStyle(featureStyle);
     };
     var draw_end = function (event) {//绘画完成触发时间
         console.log("draw end")
@@ -158,25 +165,30 @@ var basic_area = function (map) {
         event.feature.setProperties({//id等基本属性
             'id': imageInfo.name + "_" + userInfo.userId + "_" + new Date().getTime(),
             content: '',
-        });
+            color: _color
+        })
         console.log("draw new feature");
         var feature = event.feature;
         setSelectedValue(feature.get("id"), feature.getGeometry().getCoordinates());
         $('#areaInfoModal').modal();
     }
-    this.addDraw = function (shape) {
-        var value = shape;
+    var _shape = "Square";
+
+    this.addDraw = function (shape, color) {
+        _shape = shape ? shape : _shape;
+        _color = color ? color : _color;
+
         var drawConfig = {
             source: areaLayerSource,
-            type: value,
+            type: _shape,
         };
-        if (value === 'Square') {
+        if (_shape === 'Square') {
             drawConfig.type = 'Circle';
             drawConfig.geometryFunction = ol.interaction.Draw.createRegularPolygon(4);
-        } else if (value === 'Box') {
+        } else if (_shape === 'Box') {
             drawConfig.type = 'Circle';
             drawConfig.geometryFunction = ol.interaction.Draw.createBox();
-        } else if (value === 'Circle') {
+        } else if (_shape === 'Circle') {
             drawConfig.geometryFunction = ol.interaction.Draw.createRegularPolygon();
         }
         draw = new ol.interaction.Draw(drawConfig);
@@ -191,7 +203,12 @@ var basic_area = function (map) {
      */
     this.changeDrawShape = function (shape) {
         map.removeInteraction(draw);
-        this.addDraw(shape)
+        this.addDraw(shape, _color)
+    }
+
+    this.changeDrawColor = function (color) {
+        map.removeInteraction(draw);
+        this.addDraw(_shape, color)
     }
 
     /**
@@ -203,6 +220,7 @@ var basic_area = function (map) {
             areaPost.areaId = selectAreaData.id;
             areaPost.coordinates = selectAreaData.pos;
             areaPost.content = $("#area_content").val();
+            areaPost.color = selectAreaData.color;
         } else {
             alert('非法作图，请重新构建');
             this.cancelArea(false);
@@ -514,7 +532,7 @@ var showControl = function (controlId) {
 /**
  * 同步：服务器获取 图片基本信息,当前操作用户基本信息,当前用户的区域信息
  */
-requestData = function () {
+var requestData = function () {
     userInfo = {userId: "demo_user_id_1"};
     $.ajax({
         url: api_host + "/area",
@@ -546,8 +564,8 @@ requestData();
 hideAllControls();
 
 var maxZoom = imageInfo.maxLevel;
-basic_instance = new basic(basic_colorChange, maxZoom);
-basic_area_instance = new basic_area(basic_instance.map);
+var basic_instance = new basic(basic_colorChange, maxZoom);
+var basic_area_instance = new basic_area(basic_instance.map, areaInfo);
 basic_area_instance.initAreaFeatures(areaInfo);
 exportMapFn = new exportMapFn(basic_instance.map);
 

@@ -17,7 +17,6 @@
     <script src="https://cdn.bootcss.com/openlayers/4.6.4/ol-debug.js"></script>
 
 
-
     <style>
         body {
             padding-top: 20px;
@@ -32,6 +31,7 @@
         .map .ol-zoom .ol-zoom-out {
             margin-top: 204px;
         }
+
         .map .ol-zoomslider {
             background-color: transparent;
             top: 2.3em;
@@ -40,6 +40,7 @@
         .map .ol-touch .ol-zoom .ol-zoom-out {
             margin-top: 212px;
         }
+
         .map .ol-touch .ol-zoomslider {
             top: 2.75em;
         }
@@ -89,7 +90,22 @@
                         <img src="public/image/polygon.png" height="16" width="16"/>
                     </button>
                 </div>
-            </div  style="padding-top: 20px">
+                <!-- draw color -->
+                <div class="btn-group" role="group" aria-label="...">
+                    <button type="button" class="btn btn-default"
+                            onclick="basic_area_instance.changeDrawColor('Red')">
+                        <img src="public/image/r.png" height="16" width="16"/>
+                    </button>
+                    <button type="button" class="btn btn-default"
+                            onclick="basic_area_instance.changeDrawColor('Green')">
+                        <img src="public/image/g.png" height="16" width="16"/>
+                    </button>
+                    <button type="button" class="btn btn-default"
+                            onclick="basic_area_instance.changeDrawColor('Blue')">
+                        <img src="public/image/b.png" height="16" width="16"/>
+                    </button>
+                </div>
+            </div>
             <!-- color-->
             <div id="colorControl" class="controls" style="padding-top: 20px">
 

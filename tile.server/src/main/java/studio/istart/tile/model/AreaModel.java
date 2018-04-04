@@ -4,8 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 /**
  * @author DongYan
  * @version 1.0.0
@@ -30,5 +28,10 @@ public class AreaModel {
      */
     private String content;
 
-    
+    /**
+     * 边颜色
+     */
+    private String color;
+
+
 }
