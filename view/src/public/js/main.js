@@ -18,7 +18,8 @@ var basic = function (source, maxZoom) {
     });
     this.source = new source(this.chartSource).raster;
     this.sourceLayer = new ol.layer.Image({
-        source: this.source
+        source: this.source,
+
     });
     this.map = new ol.Map({
         layers: [this.sourceLayer],
@@ -29,6 +30,7 @@ var basic = function (source, maxZoom) {
         ]),
 
         view: new ol.View({
+            extent: ol.proj.transformExtent([-100, 84, 100, -84], 'EPSG:4326', 'EPSG:3857'),
             center: ol.proj.transform(
                 [0, 0], 'EPSG:4326', 'EPSG:3857'),
             zoom: 2,
