@@ -12,6 +12,7 @@ window.onload = function () {
  */
 var basic = function (source, maxZoom) {
     this.chartSource = new ol.source.XYZ({
+        wrapX: false,
         url: "http://medical2018.oss-cn-hangzhou.aliyuncs.com/" + imageInfo.name + '_{z}_{x}_{y}.jpg',
         crossOrigin: '',
     });

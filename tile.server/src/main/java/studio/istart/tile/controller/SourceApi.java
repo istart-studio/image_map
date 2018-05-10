@@ -59,7 +59,7 @@ public class SourceApi {
         ImageLoader imageLoader = ImageLoader.builder(sourceFile);
         new Thread(() -> {
             try {
-                imageLoader.cut(new ZoomLevel(1), new ImageStore(ConfigService.baseDir));
+                imageLoader.cut(new ZoomLevel(1), new ImageStore());
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
             }

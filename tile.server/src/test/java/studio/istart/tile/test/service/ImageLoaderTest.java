@@ -40,8 +40,8 @@ public class ImageLoaderTest {
     @Test
     public void cut() throws Exception {
         ImageLoader
-                .builder(new File("/Users/dongyan/Downloads/source/thumbnail4.jpg"))
-                .cut(new ZoomLevel(0), new ImageStore());
+                .builder(new File("/Users/dongyan/Documents/source/thumbnail5.jpg"))
+                .cut(new ZoomLevel(1), new ImageStore());
     }
 
     @Test
