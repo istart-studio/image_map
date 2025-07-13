@@ -1,0 +1,138 @@
+version: '3.8'
+
+services:
+  # 后端瓦片服务
+  tile-server:
+    build:
+      context: ./tile.server
+      dockerfile: Dockerfile
+    image: tileforge/tile-server:latest
+    container_name: tileforge-tile-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=8080
+      - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC
+    volumes:
+      # 数据持久化
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - ./tiles:/app/tiles
+      # 配置文件挂载
+      - ./tile.server/src/main/resources/application-prod.properties:/app/application-prod.properties:ro
+    networks:
+      - tileforge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  # 前端Web服务
+  web-server:
+    image: nginx:alpine
+    container_name: tileforge-web-server
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # 前端静态文件
+      - ./view:/usr/share/nginx/html:ro
+      # Nginx配置
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # SSL证书（如果有的话）
+      # - ./ssl:/etc/nginx/ssl:ro
+    networks:
+      - tileforge-network
+    depends_on:
+      - tile-server
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Redis缓存服务
+  redis:
+    image: redis:alpine
+    container_name: tileforge-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - tileforge-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # 监控服务（可选）
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tileforge-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - tileforge-network
+    profiles:
+      - monitoring
+
+  # Grafana可视化（可选）
+  grafana:
+    image: grafana/grafana:latest
+    container_name: tileforge-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - tileforge-network
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
+networks:
+  tileforge-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local 
